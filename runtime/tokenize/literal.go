@@ -7,7 +7,7 @@ const (
 	LInt
 	LFloat
 	LBool
-	LNull
+	LNil
 )
 
 type Literal struct {
@@ -58,6 +58,6 @@ func NewBoolLiteral(b bool) *Literal {
 	}
 }
 
-func NewNullLiteral() *Literal {
-	return &Literal{Kind: LNull}
+func NewNilLiteral() *Literal {
+	return &Literal{Kind: LNil}
 }
