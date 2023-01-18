@@ -14,7 +14,8 @@ const (
 	Float
 	Int
 	String
-	RawString
+	//RawString
+	Bool
 	True
 	False
 	Null
@@ -57,15 +58,16 @@ const (
 )
 
 var tokenKinds = [...]string{
-	Eof:         "Eof",
-	Comment:     "Comment",
-	White:       "White",
-	Newline:     "Newline",
-	Ident:       "Ident",
-	Float:       "Float",
-	Int:         "Int",
-	String:      "String",
-	RawString:   "RawString",
+	Eof:     "Eof",
+	Comment: "Ident",
+	White:   "White",
+	Newline: "Newline",
+	Ident:   "Ident",
+	Float:   "Float",
+	Int:     "Int",
+	String:  "String",
+	//RawString:   "RawString",
+	Bool:        "Bool",
 	True:        "True",
 	False:       "False",
 	Null:        "Null",

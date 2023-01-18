@@ -6,6 +6,14 @@ type Position struct {
 	Wat    int
 }
 
+func (p *Position) Clone() *Position {
+	return &Position{
+		LineNo: p.LineNo,
+		Lat:    p.Lat,
+		Wat:    p.Wat,
+	}
+}
+
 func NewPosition(ln, lat, wat int) *Position {
 	return &Position{
 		LineNo: ln,
