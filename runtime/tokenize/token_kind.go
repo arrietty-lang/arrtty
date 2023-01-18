@@ -18,7 +18,7 @@ const (
 	Bool
 	True
 	False
-	Null
+	Nil
 
 	Lrb
 	Rrb
@@ -70,7 +70,7 @@ var tokenKinds = [...]string{
 	Bool:        "Bool",
 	True:        "True",
 	False:       "False",
-	Null:        "Null",
+	Nil:         "Nil",
 	Lrb:         "Lrb",
 	Rrb:         "Rrb",
 	Lsb:         "Lsb",

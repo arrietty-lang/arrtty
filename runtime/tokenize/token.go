@@ -144,7 +144,7 @@ func IsLiteralIdent(s string) bool {
 		return true
 	case "false":
 		return true
-	case "null":
+	case "nil":
 		return true
 	}
 	return false
@@ -173,8 +173,8 @@ func NewLiteralChain(cur *Token, pos *Position, literal *Literal) *Token {
 		tokenKind = Float
 	case LBool:
 		tokenKind = Bool
-	case LNull:
-		tokenKind = Null
+	case LNil:
+		tokenKind = Nil
 	}
 	tok := NewToken(tokenKind, pos, literal)
 	cur.Next = tok
