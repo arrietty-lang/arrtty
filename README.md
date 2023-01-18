@@ -54,5 +54,7 @@ callArgs = expr ("," expr)*
 
 funcParams = ident types ("," ident types)*
 
+funcReturns = types
+            | "(" types ("," types)+ ")"
 
 ```
