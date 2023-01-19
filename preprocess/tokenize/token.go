@@ -7,7 +7,7 @@ type Token struct {
 	Pos  *Position
 
 	Literal *Literal
-	Ident   string
+	//Ident   string
 
 	Next *Token
 }
@@ -25,8 +25,7 @@ func NewIdentToken(pos *Position, s string) *Token {
 	return &Token{
 		Kind:    Ident,
 		Pos:     pos,
-		Literal: nil,
-		Ident:   s,
+		Literal: NewStringLiteral(s),
 		Next:    nil,
 	}
 }
@@ -35,8 +34,7 @@ func NewCommentToken(pos *Position, s string) *Token {
 	return &Token{
 		Kind:    Comment,
 		Pos:     pos,
-		Literal: nil,
-		Ident:   s,
+		Literal: NewStringLiteral(s),
 		Next:    nil,
 	}
 }
@@ -45,8 +43,7 @@ func NewWhiteToken(pos *Position, s string) *Token {
 	return &Token{
 		Kind:    White,
 		Pos:     pos,
-		Literal: nil,
-		Ident:   s,
+		Literal: NewStringLiteral(s),
 		Next:    nil,
 	}
 }
@@ -55,8 +52,7 @@ func NewNewlineToken(pos *Position, s string) *Token {
 	return &Token{
 		Kind:    Newline,
 		Pos:     pos,
-		Literal: nil,
-		Ident:   s,
+		Literal: NewStringLiteral(s),
 		Next:    nil,
 	}
 }

@@ -34,22 +34,18 @@ func TestTokenize(t *testing.T) {
 				Kind:    Int,
 				Pos:     GenPosForTest(""),
 				Literal: NewIntLiteral(1),
-				Ident:   "",
 				Next: &Token{
 					Kind:    Add,
 					Pos:     GenPosForTest("1 "),
 					Literal: nil,
-					Ident:   "",
 					Next: &Token{
 						Kind:    Int,
 						Pos:     GenPosForTest("1 + "),
 						Literal: NewIntLiteral(1),
-						Ident:   "",
 						Next: &Token{
 							Kind:    Eof,
 							Pos:     GenPosForTest("1 + 1"),
 							Literal: nil,
-							Ident:   "",
 							Next:    nil,
 						},
 					},
