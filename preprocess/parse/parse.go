@@ -11,6 +11,13 @@ func isEof() bool {
 	return token.Kind == tokenize.Eof
 }
 
+func peekKind(kind tokenize.TokenKind) *tokenize.Token {
+	if token.Kind == kind {
+		return token
+	}
+	return nil
+}
+
 func consumeKind(kind tokenize.TokenKind) *tokenize.Token {
 	if token.Kind == kind {
 		tok := token
@@ -103,7 +110,7 @@ func toplevel() (*Node, error) {
 		//	return nil, err
 		//}
 
-		body, err := block()
+		body, err := stmt()
 		if err != nil {
 			return nil, err
 		}
@@ -154,35 +161,153 @@ func toplevel() (*Node, error) {
 	return nil, nil
 }
 
-func block() (*Node, error) {
-	lcb, err := expectKind(tokenize.Lcb)
-	if err != nil {
-		return nil, err
+//func block() (*Node, error) {
+//	lcb, err := expectKind(tokenize.Lcb)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	var statements []*Node
+//
+//	for consumeKind(tokenize.Rcb) == nil {
+//		statement, err := stmt()
+//		if err != nil {
+//			return nil, err
+//		}
+//		statements = append(statements, statement)
+//	}
+//
+//	return NewBlockNode(lcb.Pos, statements), nil
+//}
+
+func stmt() (*Node, error) {
+	// コメント
+	if comment := consumeKind(tokenize.Comment); comment != nil {
+		return NewCommentNode(comment.Pos, comment.Literal.S), nil
 	}
 
-	var statements []*Node
-
-	for {
-		// rcb "}" を発見したら終わり
-		if rcb := consumeKind(tokenize.Rcb); rcb != nil {
-			break
+	// block
+	if lcb := consumeKind(tokenize.Lcb); lcb != nil {
+		var statements []*Node
+		for consumeKind(tokenize.Rcb) == nil {
+			statement, err := stmt()
+			if err != nil {
+				return nil, err
+			}
+			statements = append(statements, statement)
 		}
-		statement, err := stmt()
+		return NewBlockNode(lcb.Pos, statements), nil
+	}
+
+	// return
+	// 行終端の";"を消しちゃったからexpr?が判別できないかも。
+	// とりあえず"}"が存在するかで判断をする
+	if return_ := consumeIdent("return"); return_ != nil {
+		if peekKind(tokenize.Rcb) != nil {
+			return NewReturnNode(return_.Pos, nil), nil
+		}
+		value, err := expr()
 		if err != nil {
 			return nil, err
 		}
-		statements = append(statements, statement)
+		return NewReturnNode(return_.Pos, value), nil
 	}
 
-	return NewBlockNode(lcb.Pos, statements), nil
-}
+	// if else
+	if if_ := consumeIdent("if"); if_ != nil {
+		cond, err := expr()
+		if err != nil {
+			return nil, err
+		}
+		ifBlock, err := stmt()
+		if err != nil {
+			return nil, err
+		}
+		// 続いてelseがなかったら
+		if consumeIdent("else") == nil { // elseあった場合はここで消費される
+			return NewIfElseNode(if_.Pos, false, cond, ifBlock, nil), nil
+		}
+		elseBlock, err := stmt()
+		if err != nil {
+			return nil, err
+		}
+		return NewIfElseNode(if_.Pos, true, cond, ifBlock, elseBlock), nil
+	}
 
-func stmt() (*Node, error) {
-	return nil, nil
+	// for
+	if for_ := consumeIdent("for"); for_ != nil {
+		// for {}
+		if peekKind(tokenize.Lcb) != nil {
+			body, err := stmt()
+			if err != nil {
+				return nil, err
+			}
+			return NewForNode(for_.Pos, nil, nil, nil, body), nil
+		}
+
+		var init *Node
+		var cond *Node
+		var loop *Node
+		// init
+		if peekKind(tokenize.Lcb) == nil {
+			i, err := expr()
+			if err != nil {
+				return nil, err
+			}
+			init = i
+		}
+		// cond
+		if peekKind(tokenize.Lcb) == nil {
+			c, err := expr()
+			if err != nil {
+				return nil, err
+			}
+			cond = c
+		}
+		// loop
+		if peekKind(tokenize.Lcb) == nil {
+			l, err := expr()
+			if err != nil {
+				return nil, err
+			}
+			loop = l
+		}
+		// loop block
+		body, err := stmt()
+		if err != nil {
+			return nil, err
+		}
+		return NewForNode(for_.Pos, init, cond, loop, body), nil
+	}
+
+	return expr()
 }
 
 func expr() (*Node, error) {
-	return nil, nil
+	// var
+	if var_ := consumeIdent("var"); var_ != nil {
+		id, err := expectKind(tokenize.Ident)
+		if err != nil {
+			return nil, err
+		}
+		typ, err := types()
+		if err != nil {
+			return nil, err
+		}
+		idNode := NewIdentNode(id.Pos, id.Literal.S)
+		// イコール、代入がなかった場合
+		if eq := consumeKind(tokenize.Eq); eq == nil {
+			return NewVarDeclNode(var_.Pos, idNode, typ), nil
+		}
+		// 代入あった場合
+		value, err := andor()
+		if err != nil {
+			return nil, err
+		}
+		return NewAssignNode(var_.Pos, NewVarDeclNode(var_.Pos, idNode, typ), value), nil
+	}
+
+	return assign()
 }
 
 func assign() (*Node, error) {

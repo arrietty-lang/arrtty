@@ -21,17 +21,16 @@ vmに対する命令に変換する
 program = toplevel*
 
 toplevel = comment
-         | "func" ident "(" funcParams? ")" funcReturns? block
+         | "func" ident "(" funcParams? ")" funcReturns? stmt
          | "import" string
          | "var" ident types ("=" andor)?
 
-block = "{" stmt* "}"
-
 stmt = expr
      | "return" expr?
-     | "if" expr block ("else" block)?
-     | "for" (expr? expr? expr?)? block
+     | "if" expr stmt ("else" stmt)?
+     | "for" (expr? expr? expr?)? stmt
      | comment
+     | "{" stmt* "}"
 
 expr = assign
 

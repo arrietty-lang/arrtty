@@ -17,6 +17,9 @@ type Node struct {
 	CommentField  *CommentField
 	FuncDefField  *FuncDefField
 	BlockField    *BlockField
+	ReturnField   *ReturnField
+	IfElseField   *IfElseField
+	ForField      *ForField
 }
 
 func NewNode(kind NodeKind, pos *tokenize.Position) *Node {
@@ -84,5 +87,33 @@ func NewFuncDefNode(pos *tokenize.Position, ident, params, returns, body *Node) 
 func NewBlockNode(pos *tokenize.Position, stmts []*Node) *Node {
 	n := NewNode(NdBlock, pos)
 	n.BlockField = &BlockField{Statements: stmts}
+	return n
+}
+
+func NewReturnNode(pos *tokenize.Position, value *Node) *Node {
+	n := NewNode(NdReturn, pos)
+	n.ReturnField = &ReturnField{Value: value}
+	return n
+}
+
+func NewIfElseNode(pos *tokenize.Position, useElse bool, cond, if_, else_ *Node) *Node {
+	n := NewNode(NdIfElse, pos)
+	n.IfElseField = &IfElseField{
+		UseElse:   useElse,
+		Cond:      cond,
+		IfBlock:   if_,
+		ElseBlock: else_,
+	}
+	return n
+}
+
+func NewForNode(pos *tokenize.Position, init, cond, loop, body *Node) *Node {
+	n := NewNode(NdFor, pos)
+	n.ForField = &ForField{
+		Init: init,
+		Cond: cond,
+		Loop: loop,
+		Body: body,
+	}
 	return n
 }
