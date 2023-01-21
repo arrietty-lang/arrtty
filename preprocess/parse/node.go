@@ -16,6 +16,7 @@ type Node struct {
 	AssignField   *AssignField
 	CommentField  *CommentField
 	FuncDefField  *FuncDefField
+	BlockField    *BlockField
 }
 
 func NewNode(kind NodeKind, pos *tokenize.Position) *Node {
@@ -77,5 +78,11 @@ func NewFuncDefNode(pos *tokenize.Position, ident, params, returns, body *Node) 
 		Returns:    returns,
 		Body:       body,
 	}
+	return n
+}
+
+func NewBlockNode(pos *tokenize.Position, stmts []*Node) *Node {
+	n := NewNode(NdBlock, pos)
+	n.BlockField = &BlockField{Statements: stmts}
 	return n
 }

@@ -80,26 +80,34 @@ func toplevel() (*Node, error) {
 		}
 		// "func" ident "(" funcParams ")" <funcReturns? "{">
 		var returns *Node = nil
-		if lcb := consumeKind(tokenize.Lcb); lcb == nil {
-			// "func" ident "(" funcParams ")" <funcReturns>
-			ret, err := funcReturns()
-			if err != nil {
-				return nil, err
-			}
-			returns = ret
-			// "func" ident "(" funcParams ")" funcReturns <"{">
-			_ = consumeKind(tokenize.Lcb)
-		}
-		// "func" ident "(" funcParams ")" funcReturns "{" <stmt>
-		body, err := stmt()
+
+		// "{" stmt "}"のときのデータ
+		//if lcb := consumeKind(tokenize.Lcb); lcb == nil {
+		//	// "func" ident "(" funcParams ")" <funcReturns>
+		//	ret, err := funcReturns()
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//	returns = ret
+		//	// "func" ident "(" funcParams ")" funcReturns <"{">
+		//	_ = consumeKind(tokenize.Lcb)
+		//}
+		//// "func" ident "(" funcParams ")" funcReturns "{" <stmt>
+		//body, err := stmt()
+		//if err != nil {
+		//	return nil, err
+		//}
+		//// "func" ident "(" funcParams ")" funcReturns "{" stmt <"}">
+		//_, err = expectKind(tokenize.Rcb)
+		//if err != nil {
+		//	return nil, err
+		//}
+
+		body, err := block()
 		if err != nil {
 			return nil, err
 		}
-		// "func" ident "(" funcParams ")" funcReturns "{" stmt <"}">
-		_, err = expectKind(tokenize.Rcb)
-		if err != nil {
-			return nil, err
-		}
+
 		return NewFuncDefNode(t.Pos,
 			NewIdentNode(id.Pos, id.Literal.S),
 			params,
@@ -144,6 +152,29 @@ func toplevel() (*Node, error) {
 	}
 
 	return nil, nil
+}
+
+func block() (*Node, error) {
+	lcb, err := expectKind(tokenize.Lcb)
+	if err != nil {
+		return nil, err
+	}
+
+	var statements []*Node
+
+	for {
+		// rcb "}" を発見したら終わり
+		if rcb := consumeKind(tokenize.Rcb); rcb != nil {
+			break
+		}
+		statement, err := stmt()
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, statement)
+	}
+
+	return NewBlockNode(lcb.Pos, statements), nil
 }
 
 func stmt() (*Node, error) {
