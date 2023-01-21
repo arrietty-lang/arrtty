@@ -284,6 +284,10 @@ func stmt() (*Node, error) {
 }
 
 func expr() (*Node, error) {
+	return assign()
+}
+
+func assign() (*Node, error) {
 	// var
 	if var_ := consumeIdent("var"); var_ != nil {
 		id, err := expectKind(tokenize.Ident)
@@ -306,12 +310,7 @@ func expr() (*Node, error) {
 		}
 		return NewAssignNode(var_.Pos, NewVarDeclNode(var_.Pos, idNode, typ), value), nil
 	}
-
-	return assign()
-}
-
-func assign() (*Node, error) {
-	return nil, nil
+	return andor()
 }
 
 func andor() (*Node, error) {
