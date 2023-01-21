@@ -78,7 +78,7 @@ func toplevel() (*Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		// "func" ident "(" funcParams ")" <funcReturns? "{">
+		// "func" ident "(" funcParams ")" <funcReturns? block
 		var returns *Node = nil
 
 		// "{" stmt "}"のときのデータ
