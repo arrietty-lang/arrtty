@@ -7,6 +7,7 @@ const (
 
 	NdBlock
 	NdReturn
+	NdReturnTypes
 	NdIf
 	NdIfElse
 	NdWhile

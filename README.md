@@ -26,7 +26,7 @@ toplevel = comment
          | "var" ident types ("=" andor)?
 
 stmt = expr
-     | "return" expr?
+     | "return" expr? ("," expr)*
      | "if" expr stmt ("else" stmt)?
      | "for" (expr? expr? expr?)? stmt
      | comment

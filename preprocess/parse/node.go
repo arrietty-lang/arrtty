@@ -117,11 +117,11 @@ func NewBlockNode(pos *tokenize.Position, stmts []*Node) *Node {
 	return n
 }
 
-func NewReturnNode(pos *tokenize.Position, value *Node) *Node {
-	n := NewNode(NdReturn, pos)
-	n.ReturnField = &ReturnField{Value: value}
-	return n
-}
+//func NewReturnNode(pos *tokenize.Position, value *Node) *Node {
+//	n := NewNode(NdReturn, pos)
+//	n.ReturnField = &ReturnField{Value: value}
+//	return n
+//}
 
 func NewIfElseNode(pos *tokenize.Position, useElse bool, cond, if_, else_ *Node) *Node {
 	n := NewNode(NdIfElse, pos)

@@ -42,12 +42,17 @@ func expectKind(kind tokenize.TokenKind) (*tokenize.Token, error) {
 		token = token.Next
 		return tok, nil
 	}
-	return nil, fmt.Errorf("unexpected token: %v", token.Kind.String())
+	return nil, fmt.Errorf("[%d:%d] unexpected token: %v expected %s", token.Pos.LineNo, token.Pos.Lat, token.Kind.String(), kind.String())
+}
+
+func Parse(head *tokenize.Token) ([]*Node, error) {
+	token = head
+	return program()
 }
 
 func program() ([]*Node, error) {
 	var nodes []*Node
-	if !isEof() {
+	for !isEof() {
 		n, err := toplevel()
 		if err != nil {
 			return nil, err
@@ -167,7 +172,7 @@ func toplevel() (*Node, error) {
 		return NewAssignNode(c.Pos, NewVarDeclNode(c.Pos, NewIdentNode(id.Pos, id.Literal.S), typ), value), nil
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("unexpected")
 }
 
 //func block() (*Node, error) {
@@ -212,14 +217,25 @@ func stmt() (*Node, error) {
 	// 行終端の";"を消しちゃったからexpr?が判別できないかも。
 	// とりあえず"}"が存在するかで判断をする
 	if return_ := consumeIdent("return"); return_ != nil {
-		if peekKind(tokenize.Rcb) != nil {
-			return NewReturnNode(return_.Pos, nil), nil
+		var values []*Node
+		//if peekKind(tokenize.Rcb) != nil {
+		//	return NewPolynomialNode(NdReturn, return_.Pos, nil), nil
+		//}
+		for peekKind(tokenize.Rcb) == nil {
+			value, err := expr()
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, value)
+			if peekKind(tokenize.Rcb) == nil {
+				_, err = expectKind(tokenize.Comma)
+				if err != nil {
+					return nil, err
+				}
+			}
 		}
-		value, err := expr()
-		if err != nil {
-			return nil, err
-		}
-		return NewReturnNode(return_.Pos, value), nil
+
+		return NewPolynomialNode(NdReturn, return_.Pos, values), nil
 	}
 
 	// if else
@@ -318,7 +334,7 @@ func assign() (*Node, error) {
 		}
 		idNode := NewIdentNode(id.Pos, id.Literal.S)
 		// イコール、代入がなかった場合
-		if eq := consumeKind(tokenize.Eq); eq == nil {
+		if eq := consumeKind(tokenize.Assign); eq == nil {
 			return NewVarDeclNode(var_.Pos, idNode, typ), nil
 		}
 		// 代入あった場合
@@ -351,7 +367,7 @@ func assign() (*Node, error) {
 		return NewShortVarDeclNode(andor_.Pos, andor_, value), nil
 	}
 
-	return andor()
+	return andor_, nil
 }
 
 func andor() (*Node, error) {
@@ -578,7 +594,7 @@ func literal() (*Node, error) {
 		return NewLiteralNode(n.Pos, n.Literal), nil
 	}
 
-	return nil, fmt.Errorf("[%d:%d] unexpected token: %v",
+	return nil, fmt.Errorf("[%d:%d] unexpected token: %v, expected literal",
 		token.Pos.LineNo, token.Pos.Lat, token.Kind.String())
 }
 
@@ -646,7 +662,7 @@ func funcReturns() (*Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return NewPolynomialNode(NdReturn, typ.Pos, []*Node{typ}), nil
+		return NewPolynomialNode(NdReturnTypes, typ.Pos, []*Node{typ}), nil
 	}
 
 	for consumeKind(tokenize.Rrb) == nil {
@@ -660,8 +676,9 @@ func funcReturns() (*Node, error) {
 			if err != nil {
 				return nil, err
 			}
+			break
 		}
 	}
 
-	return NewPolynomialNode(NdReturn, lrb.Pos, returnTypes), nil
+	return NewPolynomialNode(NdReturnTypes, lrb.Pos, returnTypes), nil
 }

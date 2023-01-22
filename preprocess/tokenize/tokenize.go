@@ -72,6 +72,9 @@ func consumeIdent() string {
 		if !isIdentRune(userInput[currentPos.Wat]) {
 			break
 		}
+		s += string(userInput[currentPos.Wat])
+		currentPos.Lat++
+		currentPos.Wat++
 	}
 	// textは後で検査
 	return s
