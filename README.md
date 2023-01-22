@@ -38,7 +38,7 @@ assign = "var" ident types ("=" andor)?
        | ident ":=" andor
        | andor ("=" andor)?
 
-andor = equality ("==" equality | "!=" equality)*
+andor = equality ("&&" equality | "||" equality)*
 
 equality = relational ("==" relational | "!=" relational)*
 
@@ -57,9 +57,10 @@ access = literal
 literal = "(" expr ")"
         | ident ("(" callArgs? ")")?
         | int
+        | float
         | string
         | bool
-        | null
+        | nil
 
 types = "int" | "float" | "string" | "bool"
       | ident

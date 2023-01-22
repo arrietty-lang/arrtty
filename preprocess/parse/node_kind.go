@@ -39,6 +39,8 @@ const (
 
 	NdDataType
 
+	NdLiteral
+
 	NdIdent
 	NdCall
 	NdFloat

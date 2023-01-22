@@ -8,18 +8,28 @@ type Node struct {
 	Kind NodeKind
 	Pos  *tokenize.Position
 
-	ImportField *ImportField
+	//Lhs      *Node
+	//Rhs      *Node
+	//Values []*Node
 
-	DataTypeField *DataTypeField
-	IdentField    *IdentField
-	VarDeclField  *VarDeclField
-	AssignField   *AssignField
-	CommentField  *CommentField
-	FuncDefField  *FuncDefField
-	BlockField    *BlockField
-	ReturnField   *ReturnField
-	IfElseField   *IfElseField
-	ForField      *ForField
+	ImportField       *ImportField
+	DataTypeField     *DataTypeField
+	IdentField        *IdentField
+	VarDeclField      *VarDeclField
+	AssignField       *AssignField
+	CommentField      *CommentField
+	FuncDefField      *FuncDefField
+	BlockField        *BlockField
+	ReturnField       *ReturnField
+	IfElseField       *IfElseField
+	ForField          *ForField
+	ShortVarDeclField *ShortVarDeclField
+	BinaryField       *BinaryField
+	UnaryField        *UnaryField
+	LiteralField      *LiteralField
+	CallField         *CallField
+	PolynomialField   *PolynomialField
+	FuncParam         *FuncParam
 }
 
 func NewNode(kind NodeKind, pos *tokenize.Position) *Node {
@@ -28,6 +38,23 @@ func NewNode(kind NodeKind, pos *tokenize.Position) *Node {
 		Pos:  pos,
 	}
 }
+
+//func NewNodeWithLR(kind NodeKind, pos *tokenize.Position, lhs, rhs *Node) *Node {
+//	return &Node{
+//		Kind: kind,
+//		Pos:  pos,
+//		Lhs:  lhs,
+//		Rhs:  rhs,
+//	}
+//}
+//
+//func NewNodeWithChildren(kind NodeKind, pos *tokenize.Position, children []*Node) *Node {
+//	return &Node{
+//		Kind:     kind,
+//		Pos:      pos,
+//		Values: children,
+//	}
+//}
 
 func NewDataTypeNode(pos *tokenize.Position, datatype *DataType) *Node {
 	n := NewNode(NdDataType, pos)
@@ -114,6 +141,62 @@ func NewForNode(pos *tokenize.Position, init, cond, loop, body *Node) *Node {
 		Cond: cond,
 		Loop: loop,
 		Body: body,
+	}
+	return n
+}
+
+func NewShortVarDeclNode(pos *tokenize.Position, ident, value *Node) *Node {
+	n := NewNode(NdShortVarDecl, pos)
+	n.ShortVarDeclField = &ShortVarDeclField{
+		Identifier: ident,
+		Value:      value,
+	}
+	return n
+}
+
+func NewBinaryNode(kind NodeKind, pos *tokenize.Position, lhs, rhs *Node) *Node {
+	n := NewNode(kind, pos)
+	n.BinaryField = &BinaryField{
+		Lhs: lhs,
+		Rhs: rhs,
+	}
+	return n
+}
+
+func NewUnaryNode(kind NodeKind, pos *tokenize.Position, value *Node) *Node {
+	n := NewNode(kind, pos)
+	n.UnaryField = &UnaryField{
+		Value: value,
+	}
+	return n
+}
+
+func NewLiteralNode(pos *tokenize.Position, literal *tokenize.Literal) *Node {
+	n := NewNode(NdLiteral, pos)
+	n.LiteralField = &LiteralField{Literal: literal}
+	return n
+}
+
+func NewCallNode(pos *tokenize.Position, ident, args *Node) *Node {
+	n := NewNode(NdCall, pos)
+	n.CallField = &CallField{
+		Identifier: ident,
+		Args:       args,
+	}
+	return n
+}
+
+func NewPolynomialNode(kind NodeKind, pos *tokenize.Position, values []*Node) *Node {
+	n := NewNode(kind, pos)
+	n.PolynomialField = &PolynomialField{Values: values}
+	return n
+}
+
+func NewFuncParamNode(pos *tokenize.Position, ident, typ *Node) *Node {
+	n := NewNode(NdParam, pos)
+	n.FuncParam = &FuncParam{
+		Identifier: ident,
+		DataType:   typ,
 	}
 	return n
 }
