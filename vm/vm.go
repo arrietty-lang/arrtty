@@ -1,6 +1,8 @@
 package vm
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Vm struct {
 	pc int
@@ -8,23 +10,33 @@ type Vm struct {
 	sp int
 	zf int
 
-	program   []*Data // 入力全体
-	stack     []*Data
-	registers []*Data
+	program   []*Fragment // 入力全体
+	stack     []*Fragment
+	registers []*Fragment
 }
 
-func (v *Vm) Run() {}
+func NewVm(program []*Fragment) *Vm {
+	return &Vm{
+		pc:        0,
+		bp:        0,
+		sp:        0,
+		zf:        0,
+		program:   program,
+		stack:     []*Fragment{},
+		registers: []*Fragment{},
+	}
+}
 
 func (v *Vm) isProgramEof() bool {
 	return v.pc >= len(v.program)
 }
 
-func (v *Vm) currentProgram() *Data {
+func (v *Vm) currentProgram() *Fragment {
 	return v.program[v.pc]
 }
 
-func (v *Vm) getArgs(n int) []*Data {
-	var args []*Data
+func (v *Vm) getArgs(n int) []*Fragment {
+	var args []*Fragment
 	for i := 0; i < n; i++ {
 		// なぜ+1しているのかは不明
 		// 参考: func operands()
@@ -50,6 +62,13 @@ func (v *Vm) subSPSafe(positiveDiff int) error {
 	return nil
 }
 
-func (v *Vm) execute() {
-
+func (v *Vm) Execute() {
+	for !v.isProgramEof() {
+		opcode := v.currentProgram()
+		countOfOperand := opcode.CountOfOperand()
+		operands := v.getArgs(countOfOperand)
+		fmt.Println(opcode)
+		fmt.Println(operands)
+		v.pc += 1 + len(operands)
+	}
 }
