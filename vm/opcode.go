@@ -23,7 +23,7 @@ const (
 	JGE
 	CALL
 	RET
-	CP
+	MOV
 	PUSH
 	POP
 
@@ -72,7 +72,7 @@ func (o Opcode) CountOfOperand() int {
 		return 1
 	case RET:
 		return 0
-	case CP:
+	case MOV:
 		return 2
 	case PUSH:
 		return 1
@@ -82,4 +82,35 @@ func (o Opcode) CountOfOperand() int {
 		return 1
 	}
 	return -1
+}
+
+var opcodes = [...]string{
+	NOP:  "NOP",
+	SET:  "SET",
+	ADD:  "ADD",
+	SUB:  "SUB",
+	CMP:  "CMP",
+	LT:   "LT",
+	GT:   "GT",
+	LE:   "LE",
+	GE:   "GE",
+	JMP:  "JMP",
+	JZ:   "JZ",
+	JNZ:  "JNZ",
+	JE:   "JE",
+	JNE:  "JNE",
+	JL:   "JL",
+	JLE:  "JLE",
+	JG:   "JG",
+	JGE:  "JGE",
+	CALL: "CALL",
+	RET:  "RET",
+	MOV:  "MOV",
+	PUSH: "PUSH",
+	POP:  "POP",
+	EXIT: "EXIT",
+}
+
+func (o Opcode) String() string {
+	return opcodes[o]
 }
