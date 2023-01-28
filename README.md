@@ -107,4 +107,11 @@ funcReturns = types
 - [x] MSG
 ---
 - [x] SYSCALL
+  - WRITE
+    - [x] STDOUT
+    - [x] STDERR
+    - [x] FILE
+  - READ
+    - [x] STDIN
+    - [x] FILE
 - [x] EXIT
