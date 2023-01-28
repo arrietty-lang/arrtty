@@ -82,9 +82,9 @@ funcReturns = types
 - [x] SUB
 ---
 - [x] CMP
-- [ ] LT
+- [x] LT
 - [ ] GT
-- [ ] LE
+- [x] LE
 - [ ] GE
 ---
 - [x] JMP

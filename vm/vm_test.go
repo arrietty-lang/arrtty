@@ -107,3 +107,85 @@ func TestVm_Execute_Call(t *testing.T) {
 	}
 	assert.Equal(t, NewLiteralFragment(NewInt(100)), vm.registers["R2"])
 }
+
+func TestVm_Execute_LT(t *testing.T) {
+	program := []*Fragment{
+		NewOpcodeFragment(LT),         // 0
+		NewLiteralFragment(NewInt(8)), // 1
+		NewLiteralFragment(NewInt(4)), // 2
+
+		NewOpcodeFragment(JZ),          // 3
+		NewLiteralFragment(NewInt(10)), // 4
+
+		NewOpcodeFragment(MOV),          // 5
+		NewLiteralFragment(NewInt(100)), // 6
+		NewRegisterFragment(R1),         // 7
+		NewOpcodeFragment(JMP),          // 8
+		NewLiteralFragment(NewInt(13)),  // 9
+
+		NewOpcodeFragment(MOV),          // 10
+		NewLiteralFragment(NewInt(999)), // 11
+		NewRegisterFragment(R1),         // 12
+
+		NewOpcodeFragment(EXIT), // 13
+	}
+	vm := NewVm(program)
+	err := vm.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, NewLiteralFragment(NewInt(100)), vm.registers["R1"])
+
+	program[2] = NewLiteralFragment(NewInt(12))
+	vm = NewVm(program)
+	err = vm.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, NewLiteralFragment(NewInt(999)), vm.registers["R1"])
+}
+
+func TestVm_Execute_LE(t *testing.T) {
+	program := []*Fragment{
+		NewOpcodeFragment(LT),         // 0
+		NewLiteralFragment(NewInt(8)), // 1
+		NewLiteralFragment(NewInt(4)), // 2
+
+		NewOpcodeFragment(JZ),          // 3
+		NewLiteralFragment(NewInt(10)), // 4
+
+		NewOpcodeFragment(MOV),          // 5
+		NewLiteralFragment(NewInt(999)), // 6
+		NewRegisterFragment(R1),         // 7
+		NewOpcodeFragment(JMP),          // 8
+		NewLiteralFragment(NewInt(13)),  // 9
+
+		NewOpcodeFragment(MOV),          // 10
+		NewLiteralFragment(NewInt(100)), // 11
+		NewRegisterFragment(R1),         // 12
+
+		NewOpcodeFragment(EXIT), // 13
+	}
+	vm := NewVm(program)
+	err := vm.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, NewLiteralFragment(NewInt(999)), vm.registers["R1"])
+
+	program[2] = NewLiteralFragment(NewInt(12))
+	vm = NewVm(program)
+	err = vm.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, NewLiteralFragment(NewInt(100)), vm.registers["R1"])
+
+	program[2] = NewLiteralFragment(NewInt(8))
+	vm = NewVm(program)
+	err = vm.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, NewLiteralFragment(NewInt(999)), vm.registers["R1"])
+}

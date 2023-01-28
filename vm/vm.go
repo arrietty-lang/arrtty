@@ -107,6 +107,10 @@ func (v *Vm) execute(opcode *Fragment, operands []*Fragment) error {
 		return v.mov(operands)
 	case CMP:
 		return v.cmp(operands)
+	case LT:
+		return v.lt(operands)
+	case LE:
+		return v.le(operands)
 	case JMP:
 		return v.jmp(operands)
 	case JZ:
@@ -296,6 +300,226 @@ func (v *Vm) cmp(operands []*Fragment) error {
 			return nil
 		case LITERAL:
 			if isSameLiteral(x1, x2) {
+				v.zf = 1
+			} else {
+				v.zf = 0
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("unsupported")
+}
+
+func (v *Vm) lt(operands []*Fragment) error {
+	defer func() {
+		v.pc += 1 + len(operands)
+	}()
+	x1 := operands[0]
+	x2 := operands[1]
+	switch x1.Kind {
+	case REGISTER:
+		switch x2.Kind {
+		case REGISTER:
+			x1r, err := v.getRegister(*x1.Register)
+			if err != nil {
+				return err
+			}
+			x2r, err := v.getRegister(*x2.Register)
+			if err != nil {
+				return err
+			}
+			if x1r.Literal.Type != x2r.Literal.Type {
+				return fmt.Errorf("must be same type")
+			}
+			var lessThan bool
+			switch x1r.Literal.Type {
+			case Int:
+				lessThan = x1r.Literal.I < x2r.Literal.I
+			case Float:
+				lessThan = x1r.Literal.F < x2r.Literal.F
+			default:
+				return fmt.Errorf("lt is supporting only int and float")
+			}
+			if lessThan {
+				v.zf = 1
+			} else {
+				v.zf = 0
+			}
+			return nil
+		case LITERAL:
+			x1r, err := v.getRegister(*x1.Register)
+			if err != nil {
+				return err
+			}
+			if x1r.Literal.Type != x2.Literal.Type {
+				return fmt.Errorf("must be same type")
+			}
+			var lessThan bool
+			switch x1r.Literal.Type {
+			case Int:
+				lessThan = x1r.Literal.I < x2.Literal.I
+			case Float:
+				lessThan = x1r.Literal.F < x2.Literal.F
+			default:
+				return fmt.Errorf("lt is supporting only int and float")
+			}
+			if lessThan {
+				v.zf = 1
+			} else {
+				v.zf = 0
+			}
+			return nil
+		}
+	case LITERAL:
+		switch x2.Kind {
+		case REGISTER:
+			x2r, err := v.getRegister(*x2.Register)
+			if err != nil {
+				return err
+			}
+			if x1.Literal.Type != x2r.Literal.Type {
+				return fmt.Errorf("must be same type")
+			}
+			var lessThan bool
+			switch x1.Literal.Type {
+			case Int:
+				lessThan = x1.Literal.I < x2r.Literal.I
+			case Float:
+				lessThan = x1.Literal.F < x2r.Literal.F
+			default:
+				return fmt.Errorf("lt is supporting only int and float")
+			}
+			if lessThan {
+				v.zf = 1
+			} else {
+				v.zf = 0
+			}
+			return nil
+		case LITERAL:
+			if x1.Literal.Type != x2.Literal.Type {
+				return fmt.Errorf("must be same type")
+			}
+			var lessThan bool
+			switch x1.Literal.Type {
+			case Int:
+				lessThan = x1.Literal.I < x2.Literal.I
+			case Float:
+				lessThan = x1.Literal.F < x2.Literal.F
+			default:
+				return fmt.Errorf("lt is supporting only int and float")
+			}
+			if lessThan {
+				v.zf = 1
+			} else {
+				v.zf = 0
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("unsupported")
+}
+
+func (v *Vm) le(operands []*Fragment) error {
+	defer func() {
+		v.pc += 1 + len(operands)
+	}()
+	x1 := operands[0]
+	x2 := operands[1]
+	switch x1.Kind {
+	case REGISTER:
+		switch x2.Kind {
+		case REGISTER:
+			x1r, err := v.getRegister(*x1.Register)
+			if err != nil {
+				return err
+			}
+			x2r, err := v.getRegister(*x2.Register)
+			if err != nil {
+				return err
+			}
+			if x1r.Literal.Type != x2r.Literal.Type {
+				return fmt.Errorf("must be same type")
+			}
+			var lessThan bool
+			switch x1r.Literal.Type {
+			case Int:
+				lessThan = x1r.Literal.I <= x2r.Literal.I
+			case Float:
+				lessThan = x1r.Literal.F <= x2r.Literal.F
+			default:
+				return fmt.Errorf("lt is supporting only int and float")
+			}
+			if lessThan {
+				v.zf = 1
+			} else {
+				v.zf = 0
+			}
+			return nil
+		case LITERAL:
+			x1r, err := v.getRegister(*x1.Register)
+			if err != nil {
+				return err
+			}
+			if x1r.Literal.Type != x2.Literal.Type {
+				return fmt.Errorf("must be same type")
+			}
+			var lessThan bool
+			switch x1r.Literal.Type {
+			case Int:
+				lessThan = x1r.Literal.I <= x2.Literal.I
+			case Float:
+				lessThan = x1r.Literal.F <= x2.Literal.F
+			default:
+				return fmt.Errorf("lt is supporting only int and float")
+			}
+			if lessThan {
+				v.zf = 1
+			} else {
+				v.zf = 0
+			}
+			return nil
+		}
+	case LITERAL:
+		switch x2.Kind {
+		case REGISTER:
+			x2r, err := v.getRegister(*x2.Register)
+			if err != nil {
+				return err
+			}
+			if x1.Literal.Type != x2r.Literal.Type {
+				return fmt.Errorf("must be same type")
+			}
+			var lessThan bool
+			switch x1.Literal.Type {
+			case Int:
+				lessThan = x1.Literal.I <= x2r.Literal.I
+			case Float:
+				lessThan = x1.Literal.F <= x2r.Literal.F
+			default:
+				return fmt.Errorf("lt is supporting only int and float")
+			}
+			if lessThan {
+				v.zf = 1
+			} else {
+				v.zf = 0
+			}
+			return nil
+		case LITERAL:
+			if x1.Literal.Type != x2.Literal.Type {
+				return fmt.Errorf("must be same type")
+			}
+			var lessThan bool
+			switch x1.Literal.Type {
+			case Int:
+				lessThan = x1.Literal.I <= x2.Literal.I
+			case Float:
+				lessThan = x1.Literal.F <= x2.Literal.F
+			default:
+				return fmt.Errorf("lt is supporting only int and float")
+			}
+			if lessThan {
 				v.zf = 1
 			} else {
 				v.zf = 0
