@@ -73,3 +73,38 @@ funcReturns = types
             | "(" types ("," types)+ ")"
 
 ```
+
+### VM
+
+- [x] NOP
+---
+- [x] ADD
+- [x] SUB
+---
+- [x] CMP
+- [ ] LT
+- [ ] GT
+- [ ] LE
+- [ ] GE
+---
+- [x] JMP
+- [x] JZ
+- [ ] JNZ
+- [ ] JE
+- [ ] JNE
+- [ ] JL
+- [ ] JLE
+- [ ] JG
+- [ ] JGE
+---
+- [x] CALL
+- [x] RET
+---
+- [x] PUSH
+- [x] POP
+---
+- [x] MOV
+- [ ] MSG
+---
+- [ ] INT
+- [x] EXIT
