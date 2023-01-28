@@ -271,3 +271,31 @@ func TestVm_Execute_GE(t *testing.T) {
 	}
 	assert.Equal(t, NewLiteralFragment(NewInt(100)), vm.registers["R1"])
 }
+
+func TestVm_Execute_PRINT(t *testing.T) {
+	program := []*Fragment{
+		NewOpcodeFragment(MOV),
+		NewLiteralFragment(NewInt(100)),
+		NewRegisterFragment(ED),
+
+		NewOpcodeFragment(MSG),
+		NewLiteralFragment(NewString("hello, world")),
+		NewVariableFragment(NewVariable("message")),
+
+		NewOpcodeFragment(MOV),
+		NewVariableFragment(NewVariable("message")),
+		NewRegisterFragment(EW),
+
+		NewOpcodeFragment(MOV),
+		NewLiteralFragment(NewInt(int(STDOUT))),
+		NewRegisterFragment(EM),
+
+		NewOpcodeFragment(SYSCALL),
+		NewLiteralFragment(NewInt(int(WRITE))),
+	}
+	vm := NewVm(program)
+	err := vm.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+}

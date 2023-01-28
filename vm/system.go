@@ -1,11 +1,12 @@
 package vm
 
-type STDKind int
+type IODestination int
 
 const (
-	STDIN STDKind = iota
+	STDIN IODestination = iota
 	STDOUT
 	STDERR
+	FILE
 )
 
 type SystemCall int

@@ -8,6 +8,12 @@ const (
 	R3
 	R4
 	R5
+	EC // ループなどのカウンタ
+	ED // 読み込むデータサイズ | 書き込むデータサイズ?
+	EM // 書き込み先の読み込み先の種類(STDIN, STDOUT, STDERR, FILE)
+	EP // FILE PATH
+	EW // 書き込むデータの格納
+	ER // 読み込んだデータの格納
 )
 
 var regs = [...]string{
@@ -16,6 +22,12 @@ var regs = [...]string{
 	R3: "R3",
 	R4: "R4",
 	R5: "R5",
+	EC: "EC",
+	ED: "ED",
+	EM: "EM",
+	EP: "EP",
+	EW: "EW",
+	ER: "ER",
 }
 
 func (r Register) String() string {

@@ -33,8 +33,8 @@ const (
 	POP
 	// MSG `msg r '...'`でrに'...'を代入
 	MSG
-	// INT kernel call
-	INT
+	// SYSCALL kernel call
+	SYSCALL
 
 	EXIT
 )
@@ -89,35 +89,40 @@ func (o Opcode) CountOfOperand() int {
 		return 1
 	case EXIT:
 		return 0
+	case MSG:
+		return 2
+	case SYSCALL:
+		return 1
 	}
 	return -1
 }
 
 var opcodes = [...]string{
-	NOP:  "NOP",
-	SET:  "SET",
-	ADD:  "ADD",
-	SUB:  "SUB",
-	CMP:  "CMP",
-	LT:   "LT",
-	GT:   "GT",
-	LE:   "LE",
-	GE:   "GE",
-	JMP:  "JMP",
-	JZ:   "JZ",
-	JNZ:  "JNZ",
-	JE:   "JE",
-	JNE:  "JNE",
-	JL:   "JL",
-	JLE:  "JLE",
-	JG:   "JG",
-	JGE:  "JGE",
-	CALL: "CALL",
-	RET:  "RET",
-	MOV:  "MOV",
-	PUSH: "PUSH",
-	POP:  "POP",
-	EXIT: "EXIT",
+	NOP:     "NOP",
+	SET:     "SET",
+	ADD:     "ADD",
+	SUB:     "SUB",
+	CMP:     "CMP",
+	LT:      "LT",
+	GT:      "GT",
+	LE:      "LE",
+	GE:      "GE",
+	JMP:     "JMP",
+	JZ:      "JZ",
+	JNZ:     "JNZ",
+	JE:      "JE",
+	JNE:     "JNE",
+	JL:      "JL",
+	JLE:     "JLE",
+	JG:      "JG",
+	JGE:     "JGE",
+	CALL:    "CALL",
+	RET:     "RET",
+	MOV:     "MOV",
+	PUSH:    "PUSH",
+	POP:     "POP",
+	EXIT:    "EXIT",
+	SYSCALL: "SYSCALL",
 }
 
 func (o Opcode) String() string {

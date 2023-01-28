@@ -104,7 +104,7 @@ funcReturns = types
 - [x] POP
 ---
 - [x] MOV
-- [ ] MSG
+- [x] MSG
 ---
-- [ ] INT
+- [x] SYSCALL
 - [x] EXIT

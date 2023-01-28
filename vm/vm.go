@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"os"
 )
 
 type Vm struct {
@@ -31,6 +32,14 @@ func NewVm(program []*Fragment) *Vm {
 			"R1": {},
 			"R2": {},
 			"R3": {},
+			"R4": {},
+			"R5": {},
+			"EC": {},
+			"ED": {},
+			"EM": {},
+			"EP": {},
+			"EW": {},
+			"ER": {},
 		},
 		data: map[string]*Fragment{},
 	}
@@ -129,6 +138,10 @@ func (v *Vm) execute(opcode *Fragment, operands []*Fragment) error {
 		return v.ret(operands)
 	case EXIT:
 		return v.exit(operands)
+	case MSG:
+		return v.msg(operands)
+	case SYSCALL:
+		return v.syscall(operands)
 	}
 	v.wayOut = true
 	return fmt.Errorf("unsupported opcode: %v", opcode.Opcode.String())
@@ -246,6 +259,14 @@ func (v *Vm) mov(operands []*Fragment) error {
 		case LITERAL:
 			dstReg.Kind = LITERAL
 			dstReg.Literal = src.Literal
+			return nil
+		case VARIABLE:
+			dstReg.Kind = LITERAL
+			value, ok := v.data[src.Variable.Name]
+			if !ok {
+				return fmt.Errorf("%s is not defined", src.Variable.Name)
+			}
+			dstReg.Literal = value.Literal
 			return nil
 		}
 	}
@@ -700,4 +721,65 @@ func (v *Vm) exit(operands []*Fragment) error {
 	v.wayOut = true
 	_ = operands
 	return nil
+}
+
+func (v *Vm) msg(operands []*Fragment) error {
+	defer func() {
+		v.pc += 1 + len(operands)
+	}()
+	valLit := operands[0].Literal
+	name := operands[1].Variable.Name
+	if valLit.Type != String {
+		return fmt.Errorf("msg value must be string")
+	}
+	v.data[name] = operands[0]
+	return nil
+}
+
+func (v *Vm) syscall(operands []*Fragment) error {
+	defer func() {
+		v.pc += 1 + len(operands)
+	}()
+	op := SystemCall(operands[0].Literal.I)
+	switch op {
+	case WRITE:
+		// 書き込むデータサイズ
+		dataSize, err := v.getRegister(ED)
+		if err != nil {
+			return err
+		}
+		// 書き込むメッセージ全文
+		message, err := v.getRegister(EW)
+		if err != nil {
+			return err
+		}
+		// 書き込むサイズ分だけ取り出す
+
+		buf := []byte(message.Literal.S)
+		if len(buf) > dataSize.Literal.I {
+			buf = buf[:dataSize.Literal.I]
+		}
+		// 書き込み先の種類
+		dst, err := v.getRegister(EM)
+		if err != nil {
+			return err
+		}
+		switch IODestination(dst.Literal.I) {
+		case STDOUT:
+			_, err = fmt.Fprint(os.Stdout, string(buf))
+			if err != nil {
+				return err
+			}
+			return nil
+		case STDERR:
+			_, err = fmt.Fprint(os.Stderr, string(buf))
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			return fmt.Errorf("unsupported destination: %v", dst.Literal.I)
+		}
+	}
+	return fmt.Errorf("unsupported system call")
 }

@@ -9,6 +9,7 @@ const (
 	ADDRESS
 	REGISTER
 	POINTER
+	VARIABLE
 )
 
 type Fragment struct {
@@ -18,6 +19,7 @@ type Fragment struct {
 	*Address
 	*Register
 	*Pointer
+	*Variable
 }
 
 func NewOpcodeFragment(opcode Opcode) *Fragment {
@@ -52,5 +54,12 @@ func NewRegisterFragment(reg Register) *Fragment {
 		Literal:  nil,
 		Address:  nil,
 		Register: &reg,
+	}
+}
+
+func NewVariableFragment(v *Variable) *Fragment {
+	return &Fragment{
+		Kind:     VARIABLE,
+		Variable: v,
 	}
 }
