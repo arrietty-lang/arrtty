@@ -83,9 +83,9 @@ funcReturns = types
 ---
 - [x] CMP
 - [x] LT
-- [ ] GT
+- [x] GT
 - [x] LE
-- [ ] GE
+- [x] GE
 ---
 - [x] JMP
 - [x] JZ

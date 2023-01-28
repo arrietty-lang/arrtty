@@ -111,6 +111,10 @@ func (v *Vm) execute(opcode *Fragment, operands []*Fragment) error {
 		return v.lt(operands)
 	case LE:
 		return v.le(operands)
+	case GT:
+		return v.gt(operands)
+	case GE:
+		return v.ge(operands)
 	case JMP:
 		return v.jmp(operands)
 	case JZ:
@@ -529,6 +533,20 @@ func (v *Vm) le(operands []*Fragment) error {
 	}
 
 	return fmt.Errorf("unsupported")
+}
+
+func (v *Vm) gt(operands []*Fragment) error {
+	tmp := *operands[0]
+	operands[0] = operands[1]
+	operands[1] = &tmp
+	return v.lt(operands)
+}
+
+func (v *Vm) ge(operands []*Fragment) error {
+	tmp := *operands[0]
+	operands[0] = operands[1]
+	operands[1] = &tmp
+	return v.le(operands)
 }
 
 func (v *Vm) jmp(operands []*Fragment) error {
