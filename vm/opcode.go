@@ -33,6 +33,8 @@ const (
 	POP
 	// MSG `msg r '...'`でrに'...'を代入
 	MSG
+	// LEN 文字の長さBYTEを取得する
+	LEN
 	// SYSCALL kernel call
 	SYSCALL
 
@@ -91,6 +93,8 @@ func (o Opcode) CountOfOperand() int {
 		return 0
 	case MSG:
 		return 2
+	case LEN:
+		return 2
 	case SYSCALL:
 		return 1
 	}
@@ -122,6 +126,8 @@ var opcodes = [...]string{
 	PUSH:    "PUSH",
 	POP:     "POP",
 	EXIT:    "EXIT",
+	MSG:     "MSG",
+	LEN:     "LEN",
 	SYSCALL: "SYSCALL",
 }
 

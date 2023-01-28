@@ -274,13 +274,13 @@ func TestVm_Execute_GE(t *testing.T) {
 
 func TestVm_Execute_PRINT(t *testing.T) {
 	program := []*Fragment{
-		NewOpcodeFragment(MOV),
-		NewLiteralFragment(NewInt(100)),
-		NewRegisterFragment(ED),
-
 		NewOpcodeFragment(MSG),
 		NewLiteralFragment(NewString("hello, world")),
 		NewVariableFragment(NewVariable("message")),
+
+		NewOpcodeFragment(LEN),
+		NewVariableFragment(NewVariable("message")),
+		NewRegisterFragment(ED),
 
 		NewOpcodeFragment(MOV),
 		NewVariableFragment(NewVariable("message")),

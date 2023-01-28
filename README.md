@@ -105,6 +105,7 @@ funcReturns = types
 ---
 - [x] MOV
 - [x] MSG
+- [x] LEN
 ---
 - [x] SYSCALL
   - WRITE

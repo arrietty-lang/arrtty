@@ -140,6 +140,8 @@ func (v *Vm) execute(opcode *Fragment, operands []*Fragment) error {
 		return v.exit(operands)
 	case MSG:
 		return v.msg(operands)
+	case LEN:
+		return v.len(operands)
 	case SYSCALL:
 		return v.syscall(operands)
 	}
@@ -733,6 +735,24 @@ func (v *Vm) msg(operands []*Fragment) error {
 		return fmt.Errorf("msg value must be string")
 	}
 	v.data[name] = operands[0]
+	return nil
+}
+
+func (v *Vm) len(operands []*Fragment) error {
+	defer func() {
+		v.pc += 1 + len(operands)
+	}()
+	name := operands[0].Variable.Name
+	dst, err := v.getRegister(*operands[1].Register)
+	if err != nil {
+		return err
+	}
+	variable, ok := v.data[name]
+	if !ok {
+		return fmt.Errorf("%s is not defined", name)
+	}
+	dst.Kind = LITERAL
+	dst.Literal = NewInt(len([]byte(variable.Literal.S)))
 	return nil
 }
 
