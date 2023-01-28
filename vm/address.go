@@ -1,13 +1,13 @@
 package vm
 
 type Address struct {
-	Base     int
+	Original Pointer
 	Relative int
 }
 
-func NewAddress(base, relative int) *Address {
+func NewAddress(original Pointer, relative int) *Address {
 	return &Address{
-		Base:     base,
+		Original: original,
 		Relative: relative,
 	}
 }

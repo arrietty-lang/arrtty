@@ -41,3 +41,21 @@ func NewString(s string) *Literal {
 		S:    s,
 	}
 }
+
+func isSameLiteral(x1, x2 *Fragment) bool {
+	if x1.Kind != LITERAL || x2.Kind != LITERAL {
+		return false
+	}
+	if x1.Literal.Type != x2.Literal.Type {
+		return false
+	}
+	switch x1.Type {
+	case Int:
+		return x1.Literal.I == x2.Literal.I
+	case Float:
+		return x1.Literal.F == x2.Literal.F
+	case String:
+		return x1.Literal.S == x2.Literal.S
+	}
+	return false
+}

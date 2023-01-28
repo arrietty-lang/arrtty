@@ -3,15 +3,20 @@ package vm
 type Opcode int
 
 const (
+	// NOP なにもせず
 	NOP Opcode = iota
 	SET
+	// ADD `add x1 x2`でx2 += x1
 	ADD
+	// SUB `sub x1 x2`でx2 -= x1
 	SUB
+	// CMP `cmp x1 x2`で一致したらZF=1, そうでなければZF=0
 	CMP
 	LT
 	GT
 	LE
 	GE
+	// JMP `jmp x`でpc=x, xはpcの絶対位置
 	JMP
 	JZ
 	JNZ
@@ -26,6 +31,10 @@ const (
 	MOV
 	PUSH
 	POP
+	// MSG `msg r '...'`でrに'...'を代入
+	MSG
+	// INT kernel call
+	INT
 
 	EXIT
 )
@@ -79,7 +88,7 @@ func (o Opcode) CountOfOperand() int {
 	case POP:
 		return 1
 	case EXIT:
-		return 1
+		return 0
 	}
 	return -1
 }

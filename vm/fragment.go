@@ -8,6 +8,7 @@ const (
 	LITERAL
 	ADDRESS
 	REGISTER
+	POINTER
 )
 
 type Fragment struct {
@@ -16,6 +17,7 @@ type Fragment struct {
 	*Literal
 	*Address
 	*Register
+	*Pointer
 }
 
 func NewOpcodeFragment(opcode Opcode) *Fragment {
