@@ -201,10 +201,10 @@ inputLoop:
 			continue
 		}
 		// comment
-		if userInput[currentPos.Wat] == '\\' && userInput[currentPos.Wat+1] == '\\' {
-			pos := currentPos.Clone()
-			s := consumeComment()
-			cur = NewCommentChain(cur, pos, s)
+		if userInput[currentPos.Wat] == '/' && userInput[currentPos.Wat+1] == '/' {
+			//pos := currentPos.Clone()
+			_ = consumeComment()
+			//cur = NewCommentChain(cur, pos, s)
 			continue
 		}
 		// op, symbols

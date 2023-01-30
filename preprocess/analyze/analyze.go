@@ -1,0 +1,464 @@
+package analyze
+
+import (
+	"fmt"
+	"github.com/arrietty-lang/arrtty/preprocess/parse"
+	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
+)
+
+var nest int
+var knownFunction map[string][]*parse.DataType
+
+// var knownValues map[string]map[string][]*parse.DataType
+
+var knownValues map[string]map[int]map[string][]*parse.DataType
+
+func dataTypes(d *parse.DataType) []*parse.DataType {
+	return []*parse.DataType{d}
+}
+
+func isSameType(x1 []*parse.DataType, x2 []*parse.DataType) bool {
+	if len(x1) != len(x2) {
+		return false
+	}
+	for i, x := range x1 {
+		if x != x2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func isCalculable(x []*parse.DataType) bool {
+	if len(x) != 1 {
+		return false
+	}
+	switch x[0] {
+	case parse.RuntimeInt, parse.RuntimeFloat:
+		return true
+	}
+	return false
+}
+
+func isComparable(x []*parse.DataType) bool {
+	if len(x) != 1 {
+		return false
+	}
+	switch x[0] {
+	case parse.RuntimeInt, parse.RuntimeFloat:
+		return true
+	}
+	return false
+}
+
+func function(node *parse.Node) error {
+	field := node.FuncDefField
+	name := field.Identifier.IdentField.Ident
+	//knownValues[name] = map[string][]*parse.DataType{}
+	knownValues[name] = map[int]map[string][]*parse.DataType{}
+	knownValues[name][nest] = map[string][]*parse.DataType{}
+
+	// パラメータの型情報を取り出す
+	for _, paramNode := range field.Parameters.PolynomialField.Values {
+		param := paramNode.FuncParam
+		knownValues[name][nest][param.Identifier.IdentField.Ident] = dataTypes(param.DataType.DataTypeField.DataType)
+	}
+
+	// 戻り値の型を順番通りに準備
+	var definedReturnTypes []*parse.DataType
+	if field.Returns != nil {
+		for _, returnTypeNode := range field.Returns.PolynomialField.Values {
+			definedReturnTypes = append(definedReturnTypes, returnTypeNode.DataTypeField.DataType)
+		}
+	}
+	// definedReturnTypesNode := NewFunctionNode(definedReturnTypes)
+	// ブロックを解析して得られた実際の戻り値の型
+	analyzedReturnTypes, err := stmt(field.Body, name)
+	if err != nil {
+		return err
+	}
+	if !isSameType(definedReturnTypes, analyzedReturnTypes) {
+		return fmt.Errorf("戻り値の型が定義と一致しません")
+	}
+	return nil
+}
+
+func if_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	var returnTypes []*parse.DataType
+	nest++
+	// if
+	knownValues[functionName][nest] = map[string][]*parse.DataType{}
+	for _, s := range node.IfElseField.IfBlock.BlockField.Statements {
+		rt, err := stmt(s, functionName)
+		if err != nil {
+			return nil, err
+		}
+		if s.Kind == parse.NdReturn {
+			if returnTypes == nil {
+				returnTypes = rt
+			} else {
+				if !isSameType(returnTypes, rt) {
+					return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
+				}
+			}
+		}
+	}
+	if node.IfElseField.ElseBlock == nil {
+		nest--
+		return returnTypes, nil
+	}
+
+	// else
+	if node.IfElseField.ElseBlock.Kind != parse.NdBlock {
+		rt, err := stmt(node.IfElseField.ElseBlock, functionName)
+		if err != nil {
+			return nil, err
+		}
+		if returnTypes == nil {
+			returnTypes = rt
+		} else {
+			if !isSameType(returnTypes, rt) {
+				return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
+			}
+		}
+	} else {
+		knownValues[functionName][nest] = map[string][]*parse.DataType{}
+		for _, s := range node.IfElseField.ElseBlock.BlockField.Statements {
+			rt, err := stmt(s, functionName)
+			if err != nil {
+				return nil, err
+			}
+			if s.Kind == parse.NdReturn {
+				if returnTypes == nil {
+					returnTypes = rt
+				} else {
+					if !isSameType(returnTypes, rt) {
+						return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
+					}
+				}
+			}
+		}
+	}
+	nest--
+	return returnTypes, nil
+}
+
+func for_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	var returnTypes []*parse.DataType
+	nest++
+	for _, s := range node.ForField.Body.BlockField.Statements {
+		rt, err := stmt(s, functionName)
+		if err != nil {
+			return nil, err
+		}
+		if s.Kind == parse.NdReturn {
+			if returnTypes == nil {
+				returnTypes = rt
+			} else {
+				if !isSameType(returnTypes, rt) {
+					return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
+				}
+			}
+		}
+	}
+	nest--
+	return returnTypes, nil
+}
+
+func stmt(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdReturn:
+		var returnTypes []*parse.DataType
+		for _, v := range node.PolynomialField.Values {
+			rt, err := expr(v, functionName)
+			if err != nil {
+				return nil, err
+			}
+			returnTypes = append(returnTypes, rt...)
+		}
+		//if node. != nil {
+		//	return expr(node.ReturnField.Values, functionName)
+		//}
+		return returnTypes, nil
+	case parse.NdIfElse:
+		// todo : elseの中のifが適切に評価されていない
+		return if_(node, functionName)
+	case parse.NdFor:
+		return for_(node, functionName)
+	case parse.NdBlock:
+		var returnTypes []*parse.DataType
+		for _, s := range node.BlockField.Statements {
+			rt, err := stmt(s, functionName)
+			if err != nil {
+				return nil, err
+			}
+			if s.Kind == parse.NdReturn {
+				if returnTypes == nil {
+					returnTypes = rt
+				} else {
+					if !isSameType(returnTypes, rt) {
+						return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
+					}
+				}
+			}
+		}
+		return returnTypes, nil
+
+	}
+	return expr(node, functionName)
+}
+
+func expr(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	return assign(node, functionName)
+}
+
+func assign(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdVarDecl:
+		name := node.VarDeclField.Identifier.IdentField.Ident
+		typ := node.VarDeclField.Type.DataTypeField.DataType
+		knownValues[functionName][nest][name] = dataTypes(typ)
+		return dataTypes(typ), nil
+	case parse.NdShortVarDecl:
+		name := node.ShortVarDeclField.Identifier.IdentField.Ident
+		typ, err := expr(node.ShortVarDeclField.Value, functionName)
+		if err != nil {
+			return nil, err
+		}
+		knownValues[functionName][nest][name] = typ
+		return nil, nil
+	case parse.NdAssign:
+		// 型の変化なし
+		defType, err := assign(node.AssignField.To, functionName)
+		if err != nil {
+			return nil, err
+		}
+		actualType, err := assign(node.AssignField.Value, functionName)
+		if err != nil {
+			return nil, err
+		}
+		if !isSameType(defType, actualType) {
+			return nil, fmt.Errorf("代入された値と宣言の型が一致しません: %v <- %v", defType[0].Ident, actualType[0].Ident)
+		}
+
+		return nil, nil
+	}
+	return andor(node, functionName)
+}
+
+func andor(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdAnd, parse.NdOr:
+		lhs, err := andor(node, functionName)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := andor(node, functionName)
+		if err != nil {
+			return nil, err
+		}
+		if !isSameType(lhs, rhs) {
+			return nil, fmt.Errorf("条件連結は同じ型のみで使用可能です: L:%s, R:%s", lhs[0].Ident, rhs[0].Ident)
+		}
+		if !isSameType(lhs, dataTypes(parse.RuntimeBool)) {
+			return nil, fmt.Errorf("条件連結はBoolのみで使用可能です: L:%s, R:%s", lhs[0].Ident, rhs[0].Ident)
+		}
+		return dataTypes(parse.RuntimeBool), nil
+	}
+	return equality(node, functionName)
+}
+
+func equality(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdEq, parse.NdNe:
+		// todo : errとnilの関係
+		lhs, err := equality(node, functionName)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := equality(node, functionName)
+		if err != nil {
+			return nil, err
+		}
+		if !isSameType(lhs, rhs) {
+			return nil, fmt.Errorf("値比較は同じ型のみで使用可能です: L:%v, R:%v", lhs[0].Ident, rhs[0].Ident)
+		}
+		return dataTypes(parse.RuntimeBool), nil
+	}
+	return relational(node, functionName)
+}
+
+func relational(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdLt, parse.NdLe, parse.NdGt, parse.NdGe:
+		lhs, err := relational(node.BinaryField.Lhs, functionName)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := relational(node.BinaryField.Rhs, functionName)
+		if err != nil {
+			return nil, err
+		}
+		if !isSameType(lhs, rhs) {
+			return nil, fmt.Errorf("大小比較は同じ型のみで使用できます: L:%v, R:%v", lhs[0].Ident, rhs[0].Ident)
+		}
+		if !isComparable(lhs) || !isComparable(rhs) {
+			return nil, fmt.Errorf("大小比較は比較可能な型のみで使用できます(Int,Float) : L:%v, R:%v", lhs[0].Ident, rhs[0].Ident)
+		}
+		return dataTypes(parse.RuntimeBool), nil
+	}
+	return add(node, functionName)
+}
+
+func add(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdAdd:
+		lhs, err := add(node.BinaryField.Lhs, functionName)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := add(node.BinaryField.Rhs, functionName)
+		if err != nil {
+			return nil, err
+		}
+		// todo : intとfloatの計算について
+		// Intはfloatに自動キャストできる.
+		if !isSameType(lhs, rhs) {
+			return nil, fmt.Errorf("計算は同じ型のみで行えます")
+		}
+		// + だけは 文字列を許可
+		if (!isCalculable(lhs) || !isCalculable(rhs)) && !isSameType(lhs, dataTypes(parse.RuntimeString)) {
+			return nil, fmt.Errorf("掛け算は計算可能な型(Int, Float)のみで使用できます: L:%v, R:%v", lhs[0].Ident, rhs[0].Ident)
+		}
+		return lhs, nil
+	case parse.NdSub:
+		lhs, err := add(node.BinaryField.Lhs, functionName)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := add(node.BinaryField.Rhs, functionName)
+		if err != nil {
+			return nil, err
+		}
+		// todo : intとfloatの計算について
+		// Intはfloatに自動キャストできる.
+		if !isSameType(lhs, rhs) {
+			return nil, fmt.Errorf("計算は同じ型のみで行えます")
+		}
+		if !isCalculable(lhs) || !isCalculable(rhs) {
+			return nil, fmt.Errorf("掛け算は計算可能な型(Int, Float)のみで使用できます: L:%v, R:%v", lhs[0].Ident, rhs[0].Ident)
+		}
+		return lhs, nil
+	}
+	return mul(node, functionName)
+}
+
+func mul(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdMul, parse.NdDiv, parse.NdMod:
+		lhs, err := mul(node.BinaryField.Lhs, functionName)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := mul(node.BinaryField.Rhs, functionName)
+		if err != nil {
+			return nil, err
+		}
+		// todo : intとfloatの計算について
+		// Intはfloatに自動キャストできる.
+		if !isSameType(lhs, rhs) {
+			return nil, fmt.Errorf("計算は同じ型のみで行えます")
+		}
+		if !isCalculable(lhs) || !isCalculable(rhs) {
+			return nil, fmt.Errorf("掛け算は計算可能な型(Int, Float)のみで使用できます: L:%v, R:%v", lhs[0].Ident, rhs[0].Ident)
+		}
+		return lhs, nil
+	}
+	return unary(node, functionName)
+}
+
+func unary(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdNot:
+		p, err := primary(node.UnaryField.Value, functionName)
+		if err != nil {
+			return nil, err
+		}
+		if !isSameType(p, []*parse.DataType{parse.RuntimeBool}) {
+			return nil, fmt.Errorf("notはbool以外を値にできません: %v", p[0].Ident)
+		}
+		return p, nil
+	}
+	return primary(node, functionName)
+}
+
+func primary(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	return access(node, functionName)
+}
+
+func access(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	return literal(node, functionName)
+}
+
+func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	switch node.Kind {
+	case parse.NdParenthesis:
+		return expr(node, functionName)
+	case parse.NdIdent:
+		if node.IdentField.Ident == "true" || node.IdentField.Ident == "false" {
+			return dataTypes(parse.RuntimeBool), nil
+		}
+		if node.IdentField.Ident == "nil" {
+			return dataTypes(parse.RuntimeNil), nil
+		}
+		// todo : global変数
+		// nestの深い値は、0になるまで遡って定義を調べることでif文などから関数内の値の方を参照する
+		for i := nest; 0 <= i; i-- {
+			typ, ok := knownValues[functionName][i][node.IdentField.Ident]
+			if ok {
+				return typ, nil
+			}
+		}
+		return nil, fmt.Errorf("%s is not defined", node.IdentField.Ident)
+	case parse.NdCall:
+		typ, ok := knownFunction[node.CallField.Identifier.IdentField.Ident]
+		if !ok {
+			return nil, fmt.Errorf("function %s is not defined", node.CallField.Identifier.IdentField.Ident) // ?
+		}
+		return typ, nil
+	default:
+		switch node.LiteralField.Literal.Kind {
+		case tokenize.LInt:
+			return dataTypes(parse.RuntimeInt), nil
+		case tokenize.LFloat:
+			return dataTypes(parse.RuntimeFloat), nil
+		case tokenize.LString:
+			return dataTypes(parse.RuntimeString), nil
+		case tokenize.LBool:
+			return dataTypes(parse.RuntimeBool), nil
+		case tokenize.LNil:
+			return dataTypes(parse.RuntimeNil), nil
+		}
+	}
+	return nil, fmt.Errorf("unknown data type")
+}
+
+func Analyze(nodes []*parse.Node) error {
+	knownValues = map[string]map[int]map[string][]*parse.DataType{}
+	knownValues["global"] = map[int]map[string][]*parse.DataType{}
+	knownValues["global"][0] = map[string][]*parse.DataType{}
+	knownFunction = map[string][]*parse.DataType{}
+
+	for _, node := range nodes {
+		switch node.Kind {
+		case parse.NdFuncDef:
+			//ne
+			if err := function(node); err != nil {
+				return err
+			}
+		case parse.NdVarDecl:
+			// todo : global variable
+		}
+	}
+	return nil
+}

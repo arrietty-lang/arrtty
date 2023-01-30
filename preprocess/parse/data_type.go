@@ -15,9 +15,9 @@ const (
 )
 
 type DataType struct {
-	Ident  string
-	Type   RuntimeDataType
-	Custom *DataType
+	Ident string
+	Type  RuntimeDataType
+	Base  *DataType
 }
 
 func GetDataTypeByIdent(ident string) *DataType {
@@ -34,9 +34,9 @@ func GetDataTypeByIdent(ident string) *DataType {
 		return RuntimeNil
 	default:
 		return &DataType{
-			Ident:  ident,
-			Type:   Unknown,
-			Custom: nil,
+			Ident: ident,
+			Type:  Unknown,
+			Base:  nil,
 		}
 	}
 }
@@ -55,32 +55,32 @@ var RuntimeNil *DataType
 
 func init() {
 	RuntimeInt = &DataType{
-		Ident:  "int",
-		Type:   Int,
-		Custom: nil,
+		Ident: "int",
+		Type:  Int,
+		Base:  nil,
 	}
 
 	RuntimeFloat = &DataType{
-		Ident:  "float",
-		Type:   Float,
-		Custom: nil,
+		Ident: "float",
+		Type:  Float,
+		Base:  nil,
 	}
 
 	RuntimeString = &DataType{
-		Ident:  "string",
-		Type:   String,
-		Custom: nil,
+		Ident: "string",
+		Type:  String,
+		Base:  nil,
 	}
 
 	RuntimeBool = &DataType{
-		Ident:  "bool",
-		Type:   Bool,
-		Custom: nil,
+		Ident: "bool",
+		Type:  Bool,
+		Base:  nil,
 	}
 
 	RuntimeNil = &DataType{
-		Ident:  "nil",
-		Type:   Nil,
-		Custom: nil,
+		Ident: "nil",
+		Type:  Nil,
+		Base:  nil,
 	}
 }

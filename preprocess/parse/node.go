@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"fmt"
 	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
 )
 
@@ -30,6 +31,49 @@ type Node struct {
 	CallField         *CallField
 	PolynomialField   *PolynomialField
 	FuncParam         *FuncParam
+}
+
+func (n *Node) String() string {
+	var s string
+	switch n.Kind {
+	case NdImport:
+		s = fmt.Sprintf("%v", n.ImportField)
+	case NdDataType:
+		s = fmt.Sprintf("%v", n.DataTypeField)
+	case NdIdent:
+		s = fmt.Sprintf("%v", n.IdentField)
+	case NdVarDecl:
+		s = fmt.Sprintf("%v", n.VarDeclField)
+	case NdAssign:
+		s = fmt.Sprintf("%v", n.AssignField)
+	case NdComment:
+		s = fmt.Sprintf("%v", n.CommentField)
+	case NdFuncDef:
+		s = fmt.Sprintf("%v", n.FuncDefField)
+	case NdBlock:
+		s = fmt.Sprintf("%v", n.BlockField)
+	case NdReturn:
+		s = fmt.Sprintf("%v", n.ReturnField)
+	case NdIfElse:
+		s = fmt.Sprintf("%v", n.IfElseField)
+	case NdFor:
+		s = fmt.Sprintf("%v", n.ForField)
+	case NdShortVarDecl:
+		s = fmt.Sprintf("%v", n.ShortVarDeclField)
+	case NdAnd, NdOr, NdEq, NdNe, NdLt, NdLe, NdGt, NdGe, NdAdd, NdSub, NdMul, NdDiv, NdMod:
+		s = fmt.Sprintf("%v", n.BinaryField)
+	case NdNot, NdParenthesis:
+		s = fmt.Sprintf("%v", n.UnaryField)
+	case NdLiteral:
+		s = fmt.Sprintf("%v", n.LiteralField)
+	case NdCall:
+		s = fmt.Sprintf("%v", n.CallField)
+	case NdArgs, NdParams, NdReturnTypes:
+		s = fmt.Sprintf("%v", n.PolynomialField)
+	case NdParam:
+		s = fmt.Sprintf("%v", n.FuncParam)
+	}
+	return fmt.Sprintf("Node(%d-%d) %s", n.Pos.LineNo, n.Pos.Lat, s)
 }
 
 func NewNode(kind NodeKind, pos *tokenize.Position) *Node {

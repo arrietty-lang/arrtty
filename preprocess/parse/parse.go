@@ -234,7 +234,7 @@ func stmt() (*Node, error) {
 				}
 			}
 		}
-
+		//return NewReturnNode(return_.Pos, values), nil
 		return NewPolynomialNode(NdReturn, return_.Pos, values), nil
 	}
 
