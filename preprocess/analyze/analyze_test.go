@@ -1,6 +1,7 @@
 package analyze_test
 
 import (
+	"fmt"
 	"github.com/arrietty-lang/arrtty/preprocess/analyze"
 	"github.com/arrietty-lang/arrtty/preprocess/parse"
 	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
@@ -37,7 +38,10 @@ func TestAnalyze_1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = analyze.Analyze(nodes); err != nil {
+	sem, err := analyze.Analyze(nodes)
+	if err != nil {
 		t.Fatal(err)
 	}
+
+	fmt.Println(sem)
 }

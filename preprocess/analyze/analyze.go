@@ -4,14 +4,18 @@ import (
 	"fmt"
 	"github.com/arrietty-lang/arrtty/preprocess/parse"
 	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
+	"strings"
 )
 
 var nest int
 var knownFunction map[string][]*parse.DataType
+var outsideFunction []*parse.Node
 
 // var knownValues map[string]map[string][]*parse.DataType
 
 var knownValues map[string]map[int]map[string][]*parse.DataType
+
+var outsideValues []*parse.Node
 
 func dataTypes(d *parse.DataType) []*parse.DataType {
 	return []*parse.DataType{d}
@@ -484,10 +488,18 @@ func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 				return typ, nil
 			}
 		}
+		if strings.Contains(node.IdentField.Ident, ".") {
+			outsideValues = append(outsideValues, node)
+			return dataTypes(parse.RuntimeUnknown), nil
+		}
 		return nil, fmt.Errorf("%s is not defined", node.IdentField.Ident)
 	case parse.NdCall:
 		typ, ok := knownFunction[node.CallField.Identifier.IdentField.Ident]
 		if !ok {
+			if strings.Contains(node.CallField.Identifier.IdentField.Ident, ".") {
+				outsideFunction = append(outsideFunction, node)
+				return dataTypes(parse.RuntimeUnknown), nil
+			}
 			return nil, fmt.Errorf("function %s is not defined", node.CallField.Identifier.IdentField.Ident) // ?
 		}
 		return typ, nil
@@ -513,6 +525,8 @@ func Analyze(nodes []*parse.Node) (*Semantics, error) {
 	knownValues["global"] = map[int]map[string][]*parse.DataType{}
 	knownValues["global"][0] = map[string][]*parse.DataType{}
 	knownFunction = map[string][]*parse.DataType{}
+	outsideValues = []*parse.Node{}
+	outsideFunction = []*parse.Node{}
 
 	for _, node := range nodes {
 		switch node.Kind {
@@ -526,8 +540,10 @@ func Analyze(nodes []*parse.Node) (*Semantics, error) {
 		}
 	}
 	return &Semantics{
-		KnownValues:    knownValues,
-		KnownFunctions: knownFunction,
-		Tree:           nodes,
+		KnownValues:      knownValues,
+		KnownFunctions:   knownFunction,
+		OutsideValues:    outsideValues,
+		OutsideFunctions: outsideFunction,
+		Tree:             nodes,
 	}, nil
 }

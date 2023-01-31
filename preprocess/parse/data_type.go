@@ -52,6 +52,7 @@ var RuntimeFloat *DataType
 var RuntimeString *DataType
 var RuntimeBool *DataType
 var RuntimeNil *DataType
+var RuntimeUnknown *DataType
 
 func init() {
 	RuntimeInt = &DataType{
@@ -81,6 +82,12 @@ func init() {
 	RuntimeNil = &DataType{
 		Ident: "nil",
 		Type:  Nil,
+		Base:  nil,
+	}
+
+	RuntimeUnknown = &DataType{
+		Ident: "unknown",
+		Type:  Unknown,
 		Base:  nil,
 	}
 }
