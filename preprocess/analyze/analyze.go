@@ -505,7 +505,7 @@ func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 	return nil, fmt.Errorf("unknown data type")
 }
 
-func Analyze(nodes []*parse.Node) error {
+func Analyze(nodes []*parse.Node) (*Semantics, error) {
 	knownValues = map[string]map[int]map[string][]*parse.DataType{}
 	knownValues["global"] = map[int]map[string][]*parse.DataType{}
 	knownValues["global"][0] = map[string][]*parse.DataType{}
@@ -516,11 +516,15 @@ func Analyze(nodes []*parse.Node) error {
 		case parse.NdFuncDef:
 			//ne
 			if err := function(node); err != nil {
-				return err
+				return nil, err
 			}
 		case parse.NdVarDecl:
 			// todo : global variable
 		}
 	}
-	return nil
+	return &Semantics{
+		KnownValues:    knownValues,
+		KnownFunctions: knownFunction,
+		Tree:           nodes,
+	}, nil
 }

@@ -37,7 +37,7 @@ func TestAnalyze_1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = analyze.Analyze(nodes); err != nil {
+	if _, err = analyze.Analyze(nodes); err != nil {
 		t.Fatal(err)
 	}
 }
