@@ -71,6 +71,7 @@ func function(node *parse.Node) error {
 			definedReturnTypes = append(definedReturnTypes, returnTypeNode.DataTypeField.DataType)
 		}
 	}
+	knownFunction[name] = definedReturnTypes
 	// definedReturnTypesNode := NewFunctionNode(definedReturnTypes)
 	// ブロックを解析して得られた実際の戻り値の型
 	analyzedReturnTypes, err := stmt(field.Body, name)
@@ -83,68 +84,111 @@ func function(node *parse.Node) error {
 	return nil
 }
 
+//
+//func if_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+//	var returnTypes []*parse.DataType
+//	nest++
+//	// if
+//	knownValues[functionName][nest] = map[string][]*parse.DataType{}
+//	for _, s := range node.IfElseField.IfBlock.BlockField.Statements {
+//		rt, err := stmt(s, functionName)
+//		if err != nil {
+//			return nil, err
+//		}
+//		if s.Kind == parse.NdReturn {
+//			if returnTypes == nil {
+//				returnTypes = rt
+//			} else {
+//				if !isSameType(returnTypes, rt) {
+//					return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
+//				}
+//			}
+//		}
+//	}
+//	if !node.IfElseField.UseElse {
+//		nest--
+//		return returnTypes, nil
+//	}
+//
+//	// else
+//	if node.IfElseField.ElseBlock.Kind != parse.NdBlock {
+//		rt, err := stmt(node.IfElseField.ElseBlock, functionName)
+//		if err != nil {
+//			return nil, err
+//		}
+//		if node.IfElseField.ElseBlock.Kind == parse.NdReturn {
+//			if returnTypes == nil {
+//				returnTypes = rt
+//			} else {
+//				if !isSameType(returnTypes, rt) {
+//					return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
+//				}
+//			}
+//		}
+//	} else {
+//		knownValues[functionName][nest] = map[string][]*parse.DataType{}
+//		for _, s := range node.IfElseField.ElseBlock.BlockField.Statements {
+//			rt, err := stmt(s, functionName)
+//			if err != nil {
+//				return nil, err
+//			}
+//			if s.Kind == parse.NdReturn {
+//				if returnTypes == nil {
+//					returnTypes = rt
+//				} else {
+//					if !isSameType(returnTypes, rt) {
+//						return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
+//					}
+//				}
+//			}
+//		}
+//	}
+//	nest--
+//	return returnTypes, nil
+//}
+
 func if_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
-	var returnTypes []*parse.DataType
 	nest++
-	// if
-	knownValues[functionName][nest] = map[string][]*parse.DataType{}
-	for _, s := range node.IfElseField.IfBlock.BlockField.Statements {
+	for _, s := range node.BlockField.Statements {
 		rt, err := stmt(s, functionName)
 		if err != nil {
 			return nil, err
 		}
 		if s.Kind == parse.NdReturn {
-			if returnTypes == nil {
-				returnTypes = rt
-			} else {
-				if !isSameType(returnTypes, rt) {
-					return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
-				}
+			if !isSameType(knownFunction[functionName], rt) {
+				return nil, fmt.Errorf("期待される戻り値の型と一致しません")
 			}
 		}
 	}
-	if node.IfElseField.ElseBlock == nil {
-		nest--
-		return returnTypes, nil
-	}
+	nest--
+	return nil, nil
+}
 
-	// else
-	if node.IfElseField.ElseBlock.Kind != parse.NdBlock {
-		rt, err := stmt(node.IfElseField.ElseBlock, functionName)
+func else_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	nest++
+	if node.Kind != parse.NdBlock {
+		_, err := stmt(node, functionName)
 		if err != nil {
 			return nil, err
 		}
-		if returnTypes == nil {
-			returnTypes = rt
-		} else {
-			if !isSameType(returnTypes, rt) {
-				return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
-			}
-		}
 	} else {
-		knownValues[functionName][nest] = map[string][]*parse.DataType{}
-		for _, s := range node.IfElseField.ElseBlock.BlockField.Statements {
+		for _, s := range node.BlockField.Statements {
 			rt, err := stmt(s, functionName)
 			if err != nil {
 				return nil, err
 			}
 			if s.Kind == parse.NdReturn {
-				if returnTypes == nil {
-					returnTypes = rt
-				} else {
-					if !isSameType(returnTypes, rt) {
-						return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
-					}
+				if !isSameType(knownFunction[functionName], rt) {
+					return nil, fmt.Errorf("期待される戻り値の型と一致しません")
 				}
 			}
 		}
 	}
 	nest--
-	return returnTypes, nil
+	return nil, nil
 }
 
 func for_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
-	var returnTypes []*parse.DataType
 	nest++
 	for _, s := range node.ForField.Body.BlockField.Statements {
 		rt, err := stmt(s, functionName)
@@ -152,17 +196,13 @@ func for_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 			return nil, err
 		}
 		if s.Kind == parse.NdReturn {
-			if returnTypes == nil {
-				returnTypes = rt
-			} else {
-				if !isSameType(returnTypes, rt) {
-					return nil, fmt.Errorf("ブロック内で返却される戻り値が変化しています")
-				}
+			if !isSameType(knownFunction[functionName], rt) {
+				return nil, fmt.Errorf("期待される戻り値の型と一致しません")
 			}
 		}
 	}
 	nest--
-	return returnTypes, nil
+	return nil, nil
 }
 
 func stmt(node *parse.Node, functionName string) ([]*parse.DataType, error) {
@@ -181,10 +221,32 @@ func stmt(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 		//}
 		return returnTypes, nil
 	case parse.NdIfElse:
-		// todo : elseの中のifが適切に評価されていない
-		return if_(node, functionName)
+		// IF
+		_, err := if_(node.IfElseField.IfBlock, functionName)
+		if err != nil {
+			return nil, err
+		}
+		//if !isSameType(knownFunction[functionName], rt) {
+		//	return nil, fmt.Errorf("戻り値の型が一致しません")
+		//}
+		if !node.IfElseField.UseElse {
+			return nil, nil
+		}
+		// ELSE
+		_, err = else_(node.IfElseField.ElseBlock, functionName)
+		if err != nil {
+			return nil, err
+		}
+		//if !isSameType(knownFunction[functionName], rt) {
+		//	return nil, fmt.Errorf("戻り値の型が一致しません")
+		//}
+		return nil, nil
 	case parse.NdFor:
-		return for_(node, functionName)
+		_, err := for_(node, functionName)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
 	case parse.NdBlock:
 		var returnTypes []*parse.DataType
 		for _, s := range node.BlockField.Statements {
