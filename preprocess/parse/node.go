@@ -31,6 +31,7 @@ type Node struct {
 	CallField         *CallField
 	PolynomialField   *PolynomialField
 	FuncParam         *FuncParam
+	PrefixField       *PrefixField
 }
 
 func (n *Node) String() string {
@@ -241,6 +242,15 @@ func NewFuncParamNode(pos *tokenize.Position, ident, typ *Node) *Node {
 	n.FuncParam = &FuncParam{
 		Identifier: ident,
 		DataType:   typ,
+	}
+	return n
+}
+
+func NewPrefixNode(pos *tokenize.Position, prefix string, child *Node) *Node {
+	n := NewNode(NdPrefix, pos)
+	n.PrefixField = &PrefixField{
+		Prefix: prefix,
+		Child:  child,
 	}
 	return n
 }

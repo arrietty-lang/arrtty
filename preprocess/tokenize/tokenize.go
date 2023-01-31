@@ -43,7 +43,7 @@ func isIdentRune(r rune) bool {
 	return ('a' <= r && r <= 'z') ||
 		('A' <= r && r <= 'Z') ||
 		('0' <= r && r <= '9') ||
-		('_' == r || '.' == r)
+		('_' == r)
 }
 
 func isNotEof() bool {
