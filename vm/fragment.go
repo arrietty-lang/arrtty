@@ -10,6 +10,7 @@ const (
 	REGISTER
 	POINTER
 	VARIABLE
+	LABEL
 )
 
 type Fragment struct {
@@ -20,6 +21,7 @@ type Fragment struct {
 	*Register
 	*Pointer
 	*Variable
+	*Label
 }
 
 func NewOpcodeFragment(opcode Opcode) *Fragment {
@@ -61,5 +63,19 @@ func NewVariableFragment(v *Variable) *Fragment {
 	return &Fragment{
 		Kind:     VARIABLE,
 		Variable: v,
+	}
+}
+
+func NewDefLabelFragment(id string) *Fragment {
+	return &Fragment{Kind: LABEL,
+		Label: &Label{
+			Id:     id,
+			Define: true,
+		}}
+}
+func NewLabelFragment(id string) *Fragment {
+	return &Fragment{
+		Kind:  LABEL,
+		Label: &Label{Id: id, Define: false},
 	}
 }

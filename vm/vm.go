@@ -16,6 +16,7 @@ type Vm struct {
 	stack     []*Fragment
 	registers map[string]*Fragment
 	data      map[string]*Fragment // like section .data
+	labels    map[string]int
 }
 
 func NewVm(program []*Fragment) *Vm {
@@ -41,7 +42,8 @@ func NewVm(program []*Fragment) *Vm {
 			"EW": {},
 			"ER": {},
 		},
-		data: map[string]*Fragment{},
+		data:   map[string]*Fragment{},
+		labels: map[string]int{},
 	}
 }
 
@@ -88,9 +90,33 @@ func (v *Vm) subSPSafe(absoluteDiff int) error {
 	return nil
 }
 
+func (v *Vm) scan() error {
+	for !v.isProgramEof() {
+		f := v.currentProgram()
+		if f.Kind == LABEL && f.Label.Define {
+			v.labels[f.Id] = v.pc
+		}
+		v.pc++
+	}
+	v.pc = 0
+	return nil
+}
+
 func (v *Vm) Execute() error {
+	_ = v.scan()
+
+	entrypoint, ok := v.labels["main"]
+	if !ok {
+		return fmt.Errorf("label(main): not found")
+	}
+	v.pc = entrypoint
+
 	for !v.isProgramEof() {
 		opcode := v.currentProgram()
+		if opcode.Kind == LABEL && opcode.Label.Define {
+			v.pc++
+			continue
+		}
 		countOfOperand := opcode.CountOfOperand()
 		operands := v.getArgs(countOfOperand)
 		err := v.execute(opcode, operands)
@@ -574,6 +600,15 @@ func (v *Vm) ge(operands []*Fragment) error {
 
 func (v *Vm) jmp(operands []*Fragment) error {
 	x := operands[0]
+	if x.Kind == LABEL {
+		loc, ok := v.labels[x.Label.Id]
+		if !ok {
+			return fmt.Errorf("label(%s): not found", x.Label.Id)
+		}
+		v.pc = loc
+		return nil
+	}
+
 	if x.Kind != LITERAL || x.Literal.Type != Int {
 		return fmt.Errorf("unexpected")
 	}
@@ -584,15 +619,24 @@ func (v *Vm) jmp(operands []*Fragment) error {
 func (v *Vm) jz(operands []*Fragment) error {
 	// JUMP IF ZERO (ZFが1であればジャンプ)
 	x := operands[0]
-	if x.Kind != LITERAL || x.Literal.Type != Int {
-		return fmt.Errorf("unexpected")
+	switch x.Kind {
+	case LABEL:
+		loc, ok := v.labels[x.Label.Id]
+		if !ok {
+			return fmt.Errorf("label(%s): not found", x.Label.Id)
+		}
+		if v.zf == 1 {
+			v.pc = loc
+			return nil
+		}
+	case LITERAL:
+		if x.Literal.Type == Int {
+			if v.zf == 1 {
+				v.pc = x.Literal.I
+				return nil
+			}
+		}
 	}
-	// ゼロなので飛ぶ
-	if v.zf == 1 {
-		v.pc = x.Literal.I
-		return nil
-	}
-	// 飛ばなかった場合コマンドと引数を読み進める
 	v.pc += 1 + len(operands)
 	return nil
 }
@@ -694,7 +738,24 @@ func (v *Vm) pop(operands []*Fragment) error {
 func (v *Vm) call(operands []*Fragment) error {
 	// 行き先がまともか？
 	newLocation := operands[0]
-	if newLocation.Kind != LITERAL || newLocation.Literal.Type != Int {
+	//if newLocation.Kind != LITERAL || newLocation.Literal.Type != Int {
+	//	return fmt.Errorf("unsupported")
+	//}
+	var loc int
+	switch newLocation.Kind {
+	case LABEL:
+		l, ok := v.labels[newLocation.Label.Id]
+		if !ok {
+			return fmt.Errorf("label(%s): not found", newLocation.Label.Id)
+		}
+		loc = l
+	case LITERAL:
+		if newLocation.Literal.Type == Int {
+			loc = newLocation.Literal.I
+		} else {
+			return fmt.Errorf("unsupported")
+		}
+	default:
 		return fmt.Errorf("unsupported")
 	}
 	// 戻ってくるところを保存
@@ -702,7 +763,7 @@ func (v *Vm) call(operands []*Fragment) error {
 		return err
 	}
 	v.stack[v.sp] = NewLiteralFragment(NewInt(v.pc + 2))
-	v.pc = newLocation.Literal.I
+	v.pc = loc
 	return nil
 }
 

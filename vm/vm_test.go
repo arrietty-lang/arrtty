@@ -299,3 +299,76 @@ func TestVm_Execute_PRINT(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestVm_Execute_MAIN_LABEL(t *testing.T) {
+	program := []*Fragment{
+		NewLabelFragment("main"),
+		NewOpcodeFragment(MSG),
+		NewLiteralFragment(NewString("hello, world")),
+		NewVariableFragment(NewVariable("message")),
+
+		NewOpcodeFragment(LEN),
+		NewVariableFragment(NewVariable("message")),
+		NewRegisterFragment(ED),
+
+		NewOpcodeFragment(MOV),
+		NewVariableFragment(NewVariable("message")),
+		NewRegisterFragment(EW),
+
+		NewOpcodeFragment(MOV),
+		NewLiteralFragment(NewInt(int(STDOUT))),
+		NewRegisterFragment(EM),
+
+		NewOpcodeFragment(SYSCALL),
+		NewLiteralFragment(NewInt(int(WRITE))),
+	}
+	vm := NewVm(program)
+	err := vm.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVm_Execute_LABEL_JMP(t *testing.T) {
+	program := []*Fragment{
+		NewDefLabelFragment("print"),
+		NewOpcodeFragment(MSG),
+		NewLiteralFragment(NewString("hello, world")),
+		NewVariableFragment(NewVariable("message")),
+
+		NewOpcodeFragment(LEN),
+		NewVariableFragment(NewVariable("message")),
+		NewRegisterFragment(ED),
+
+		NewOpcodeFragment(MOV),
+		NewVariableFragment(NewVariable("message")),
+		NewRegisterFragment(EW),
+
+		NewOpcodeFragment(MOV),
+		NewLiteralFragment(NewInt(int(STDOUT))),
+		NewRegisterFragment(EM),
+
+		NewOpcodeFragment(SYSCALL),
+		NewLiteralFragment(NewInt(int(WRITE))),
+
+		NewOpcodeFragment(RET),
+
+		NewDefLabelFragment("main"),
+		NewOpcodeFragment(CALL),
+		NewLabelFragment("print"),
+		NewOpcodeFragment(CALL),
+		NewLabelFragment("print"),
+		NewOpcodeFragment(CALL),
+		NewLabelFragment("print"),
+		NewOpcodeFragment(CALL),
+		NewLabelFragment("print"),
+		NewOpcodeFragment(CALL),
+		NewLabelFragment("print"),
+		NewOpcodeFragment(EXIT),
+	}
+	vm := NewVm(program)
+	err := vm.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
