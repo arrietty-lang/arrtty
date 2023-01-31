@@ -18,6 +18,13 @@ func peekKind(kind tokenize.TokenKind) *tokenize.Token {
 	return nil
 }
 
+func peekNextKind(kind tokenize.TokenKind) *tokenize.Token {
+	if token.Next.Kind == kind {
+		return token.Next
+	}
+	return nil
+}
+
 func consumeKind(kind tokenize.TokenKind) *tokenize.Token {
 	if token.Kind == kind {
 		tok := token
@@ -541,6 +548,15 @@ func primary() (*Node, error) {
 }
 
 func access() (*Node, error) {
+	if peekKind(tokenize.Ident) != nil && peekNextKind(tokenize.Dot) != nil {
+		p := consumeKind(tokenize.Ident)
+		_ = consumeKind(tokenize.Dot)
+		l, err := literal()
+		if err != nil {
+			return nil, err
+		}
+		return NewPrefixNode(p.Pos, p.Literal.S, l), nil
+	}
 	return literal()
 }
 

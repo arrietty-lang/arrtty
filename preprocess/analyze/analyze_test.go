@@ -14,7 +14,7 @@ func TestAnalyze_1(t *testing.T) {
 		return hello + name + "!"
 	}
 	func sayHello(name string) {
-		// printf(sayHelloS(name))
+		fmt.printf(sayHelloS(name))
 	}
 	func sub(x int, y int) (int, bool) {
 		var isMinus bool
@@ -22,7 +22,7 @@ func TestAnalyze_1(t *testing.T) {
 		if z < 0 {
 			isMinus = true
 		} else if 1 == 2 {
-			return z, 2, 1
+			return z, true
 		} else {
 			isMinus = false
 		}

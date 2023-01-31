@@ -459,6 +459,9 @@ func primary(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 }
 
 func access(node *parse.Node, functionName string) ([]*parse.DataType, error) {
+	if node.Kind == parse.NdPrefix {
+		return literal(node.PrefixField.Child, functionName)
+	}
 	return literal(node, functionName)
 }
 

@@ -65,6 +65,8 @@ const (
 	NdAccess
 	NdParenthesis
 
+	NdPrefix
+
 	NdComment
 	//White
 	//Newline

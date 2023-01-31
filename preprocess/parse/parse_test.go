@@ -19,7 +19,7 @@ func TestParseWork(t *testing.T) {
 		return hello + name + "!"
 	}
 	func sayHello(name string) {
-		printf(sayHelloS(name))
+		fmt.printf(sayHelloS(name))
 	}
 	func sub(x int, y int) (int, bool) {
 		var isMinus bool

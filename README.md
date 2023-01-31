@@ -52,7 +52,7 @@ unary = ("+" | "-" | "!")? primary
 
 primary = access
 
-access = literal 
+access = (ident ".")* literal 
 
 literal = "(" expr ")"
         | ident ("(" callArgs? ")")?
