@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -100,6 +101,17 @@ func (v *Vm) scan() error {
 	}
 	v.pc = 0
 	return nil
+}
+
+func (v *Vm) ExitCode() int {
+	f, err := v.getRegister(R1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if f.Kind != LITERAL || f.Literal.Type != Int {
+		log.Fatal("終了コードが不正な値です")
+	}
+	return f.Literal.I
 }
 
 func (v *Vm) Execute() error {
