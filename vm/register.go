@@ -8,6 +8,7 @@ const (
 	R3
 	R4
 	R5
+
 	EC // ループなどのカウンタ
 	ED // 読み込むデータサイズ | 書き込むデータサイズ?
 	EM // 書き込み先の読み込み先の種類(STDIN, STDOUT, STDERR, FILE)

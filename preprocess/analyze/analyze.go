@@ -63,9 +63,11 @@ func function(node *parse.Node) error {
 	knownValues[name][nest] = map[string][]*parse.DataType{}
 
 	// パラメータの型情報を取り出す
-	for _, paramNode := range field.Parameters.PolynomialField.Values {
-		param := paramNode.FuncParam
-		knownValues[name][nest][param.Identifier.IdentField.Ident] = dataTypes(param.DataType.DataTypeField.DataType)
+	if field.Parameters != nil {
+		for _, paramNode := range field.Parameters.PolynomialField.Values {
+			param := paramNode.FuncParam
+			knownValues[name][nest][param.Identifier.IdentField.Ident] = dataTypes(param.DataType.DataTypeField.DataType)
+		}
 	}
 
 	// 戻り値の型を順番通りに準備

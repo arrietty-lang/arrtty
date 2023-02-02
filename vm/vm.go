@@ -309,6 +309,24 @@ func (v *Vm) mov(operands []*Fragment) error {
 			dstReg.Literal = value.Literal
 			return nil
 		}
+	case POINTER:
+		switch src.Kind {
+		case POINTER:
+			switch *dst.Pointer {
+			case BP:
+				switch *src.Pointer {
+				case SP:
+					v.bp = v.sp
+					return nil
+				}
+			case SP:
+				switch *src.Pointer {
+				case BP:
+					v.sp = v.bp
+					return nil
+				}
+			}
+		}
 	}
 	return fmt.Errorf("unsupported")
 }
@@ -677,12 +695,14 @@ func (v *Vm) push(operands []*Fragment) error {
 				return err
 			}
 			v.stack[v.sp] = sourceValue
+			return nil
 		case SP:
 			sourceValue := NewLiteralFragment(NewInt(v.sp))
 			if err := v.subSPSafe(1); err != nil {
 				return err
 			}
 			v.stack[v.sp] = sourceValue
+			return nil
 		}
 	case ADDRESS:
 		switch source.Address.Original {
@@ -692,12 +712,14 @@ func (v *Vm) push(operands []*Fragment) error {
 				return err
 			}
 			v.stack[v.sp] = sourceValue
+			return nil
 		case SP:
 			sourceValue := v.stack[v.sp+source.Address.Relative]
 			if err := v.subSPSafe(1); err != nil {
 				return err
 			}
 			v.stack[v.sp] = sourceValue
+			return nil
 		}
 	}
 	return fmt.Errorf("unsupported")

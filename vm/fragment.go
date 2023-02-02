@@ -73,9 +73,17 @@ func NewDefLabelFragment(id string) *Fragment {
 			Define: true,
 		}}
 }
+
 func NewLabelFragment(id string) *Fragment {
 	return &Fragment{
 		Kind:  LABEL,
 		Label: &Label{Id: id, Define: false},
+	}
+}
+
+func NewPointerFragment(pointer Pointer) *Fragment {
+	return &Fragment{
+		Kind:    POINTER,
+		Pointer: &pointer,
 	}
 }
