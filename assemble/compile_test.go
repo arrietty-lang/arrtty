@@ -170,8 +170,73 @@ func TestCompile_Math(t *testing.T) {
 	}{
 		{
 			"*+",
-			"func main() int { return 1 + ( 3 - 1 ) * 4 }",
-			9,
+			"func main() int { return 1 + ( 3 - 2 ) * 4 }",
+			5,
+		},
+	}
+
+	for _, tt := range tests {
+		token, err := tokenize.Tokenize(tt.code)
+		if err != nil {
+			t.Fatal(err)
+		}
+		nodes, err := parse.Parse(token)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sem, err := analyze.Analyze(nodes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		obj, err := assemble.Link([]*assemble.Object{
+			{
+				Identifier:    "",
+				SemanticsNode: sem,
+			},
+		})
+		fragments, err := assemble.Compile(obj.SemanticsNode)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		v := vm.NewVm(fragments)
+		fmt.Println(v.Export())
+		err = v.Execute()
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, tt.expect, v.ExitCode())
+	}
+}
+
+func TestCompile_CALL(t *testing.T) {
+	tests := []struct {
+		name   string
+		code   string
+		expect int
+	}{
+		{
+			"+-",
+			`
+				func sub(a int, b int) int { return a-b }
+				func add(x int, y int) int {
+					return x+y
+				}
+				func main() int {
+					return sub(add(2, 1), 2)
+				}`,
+			1,
+		}, {
+			"*+",
+			`
+				func mul(a int, b int) int { return a*b }
+				func add(x int, y int) int {
+					return x+y
+				}
+				func main() int {
+					return mul(3, add(2, 3))
+				}`,
+			15,
 		},
 	}
 

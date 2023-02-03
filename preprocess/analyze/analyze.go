@@ -8,7 +8,7 @@ import (
 )
 
 var nest int
-var knownFunction map[string][]*parse.DataType
+var knownFunction map[string]*FnDataType
 var outsideFunction []*parse.Node
 
 // var knownValues map[string]map[string][]*parse.DataType
@@ -62,11 +62,13 @@ func function(node *parse.Node) error {
 	knownValues[name] = map[int]map[string][]*parse.DataType{}
 	knownValues[name][nest] = map[string][]*parse.DataType{}
 
+	var params []*parse.DataType
 	// パラメータの型情報を取り出す
 	if field.Parameters != nil {
 		for _, paramNode := range field.Parameters.PolynomialField.Values {
 			param := paramNode.FuncParam
 			knownValues[name][nest][param.Identifier.IdentField.Ident] = dataTypes(param.DataType.DataTypeField.DataType)
+			params = append(params, param.DataType.DataTypeField.DataType)
 		}
 	}
 
@@ -77,7 +79,10 @@ func function(node *parse.Node) error {
 			definedReturnTypes = append(definedReturnTypes, returnTypeNode.DataTypeField.DataType)
 		}
 	}
-	knownFunction[name] = definedReturnTypes
+	knownFunction[name] = &FnDataType{
+		Params:  params,
+		Returns: definedReturnTypes,
+	}
 	// definedReturnTypesNode := NewFunctionNode(definedReturnTypes)
 	// ブロックを解析して得られた実際の戻り値の型
 	analyzedReturnTypes, err := stmt(field.Body, name)
@@ -165,7 +170,7 @@ func if_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 			return nil, err
 		}
 		if s.Kind == parse.NdReturn {
-			if !isSameType(knownFunction[functionName], rt) {
+			if !isSameType(knownFunction[functionName].Returns, rt) {
 				return nil, fmt.Errorf("期待される戻り値の型と一致しません")
 			}
 		}
@@ -188,7 +193,7 @@ func else_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 				return nil, err
 			}
 			if s.Kind == parse.NdReturn {
-				if !isSameType(knownFunction[functionName], rt) {
+				if !isSameType(knownFunction[functionName].Returns, rt) {
 					return nil, fmt.Errorf("期待される戻り値の型と一致しません")
 				}
 			}
@@ -206,7 +211,7 @@ func for_(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 			return nil, err
 		}
 		if s.Kind == parse.NdReturn {
-			if !isSameType(knownFunction[functionName], rt) {
+			if !isSameType(knownFunction[functionName].Returns, rt) {
 				return nil, fmt.Errorf("期待される戻り値の型と一致しません")
 			}
 		}
@@ -500,6 +505,7 @@ func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 		}
 		return nil, fmt.Errorf("%s is not defined", node.IdentField.Ident)
 	case parse.NdCall:
+		// 期待する引数型
 		typ, ok := knownFunction[node.CallField.Identifier.IdentField.Ident]
 		if !ok {
 			if strings.Contains(node.CallField.Identifier.IdentField.Ident, ".") {
@@ -508,7 +514,19 @@ func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 			}
 			return nil, fmt.Errorf("function %s is not defined", node.CallField.Identifier.IdentField.Ident) // ?
 		}
-		return typ, nil
+		//node.CallField.Args
+		var args []*parse.DataType
+		for _, arg := range node.CallField.Args.PolynomialField.Values {
+			argT, err := expr(arg, functionName)
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, argT...)
+		}
+		if !isSameType(typ.Params, args) {
+			return nil, fmt.Errorf("関数呼び出しの引数と与えられた型が異なります")
+		}
+		return typ.Returns, nil
 	default:
 		switch node.LiteralField.Literal.Kind {
 		case tokenize.LInt:
@@ -530,7 +548,7 @@ func Analyze(nodes []*parse.Node) (*Semantics, error) {
 	knownValues = map[string]map[int]map[string][]*parse.DataType{}
 	knownValues["global"] = map[int]map[string][]*parse.DataType{}
 	knownValues["global"][0] = map[string][]*parse.DataType{}
-	knownFunction = map[string][]*parse.DataType{}
+	knownFunction = map[string]*FnDataType{}
 	outsideValues = []*parse.Node{}
 	outsideFunction = []*parse.Node{}
 

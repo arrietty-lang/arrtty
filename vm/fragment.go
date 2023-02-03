@@ -24,7 +24,7 @@ type Fragment struct {
 	*Label
 }
 
-func (f *Fragment) String() string {
+func (f Fragment) String() string {
 	switch f.Kind {
 	case OPCODE:
 		return f.Opcode.String()
@@ -44,24 +44,24 @@ func (f *Fragment) String() string {
 	return ""
 }
 
-func NewOpcodeFragment(opcode Opcode) *Fragment {
-	return &Fragment{
+func NewOpcodeFragment(opcode Opcode) Fragment {
+	return Fragment{
 		Kind:    OPCODE,
 		Opcode:  &opcode,
 		Literal: nil,
 	}
 }
 
-func NewLiteralFragment(literal *Literal) *Fragment {
-	return &Fragment{
+func NewLiteralFragment(literal *Literal) Fragment {
+	return Fragment{
 		Kind:    LITERAL,
 		Opcode:  nil,
 		Literal: literal,
 	}
 }
 
-func NewAddressFragment(address *Address) *Fragment {
-	return &Fragment{
+func NewAddressFragment(address *Address) Fragment {
+	return Fragment{
 		Kind:    ADDRESS,
 		Opcode:  nil,
 		Literal: nil,
@@ -69,8 +69,8 @@ func NewAddressFragment(address *Address) *Fragment {
 	}
 }
 
-func NewRegisterFragment(reg Register) *Fragment {
-	return &Fragment{
+func NewRegisterFragment(reg Register) Fragment {
+	return Fragment{
 		Kind:     REGISTER,
 		Opcode:   nil,
 		Literal:  nil,
@@ -79,30 +79,30 @@ func NewRegisterFragment(reg Register) *Fragment {
 	}
 }
 
-func NewVariableFragment(v *Variable) *Fragment {
-	return &Fragment{
+func NewVariableFragment(v *Variable) Fragment {
+	return Fragment{
 		Kind:     VARIABLE,
 		Variable: v,
 	}
 }
 
-func NewDefLabelFragment(id string) *Fragment {
-	return &Fragment{Kind: LABEL,
+func NewDefLabelFragment(id string) Fragment {
+	return Fragment{Kind: LABEL,
 		Label: &Label{
 			Id:     id,
 			Define: true,
 		}}
 }
 
-func NewLabelFragment(id string) *Fragment {
-	return &Fragment{
+func NewLabelFragment(id string) Fragment {
+	return Fragment{
 		Kind:  LABEL,
 		Label: &Label{Id: id, Define: false},
 	}
 }
 
-func NewPointerFragment(pointer Pointer) *Fragment {
-	return &Fragment{
+func NewPointerFragment(pointer Pointer) Fragment {
+	return Fragment{
 		Kind:    POINTER,
 		Pointer: &pointer,
 	}

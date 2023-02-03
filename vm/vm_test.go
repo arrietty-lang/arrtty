@@ -6,7 +6,7 @@ import (
 )
 
 func TestVm_Execute_Math1(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		// r1に15を代入
 		NewOpcodeFragment(MOV),
 		NewLiteralFragment(NewInt(15)),
@@ -38,7 +38,7 @@ func TestVm_Execute_Math1(t *testing.T) {
 }
 
 func TestVm_Execute_IF(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		// R1 = 1
 		NewOpcodeFragment(MOV),        // 0
 		NewLiteralFragment(NewInt(1)), // 1
@@ -84,7 +84,7 @@ func TestVm_Execute_IF(t *testing.T) {
 }
 
 func TestVm_Execute_Call(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		NewOpcodeFragment(CALL),       // 0
 		NewLiteralFragment(NewInt(6)), // 1
 
@@ -109,7 +109,7 @@ func TestVm_Execute_Call(t *testing.T) {
 }
 
 func TestVm_Execute_LT(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		NewOpcodeFragment(LT),         // 0
 		NewLiteralFragment(NewInt(8)), // 1
 		NewLiteralFragment(NewInt(4)), // 2
@@ -146,7 +146,7 @@ func TestVm_Execute_LT(t *testing.T) {
 }
 
 func TestVm_Execute_LE(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		NewOpcodeFragment(LT),         // 0
 		NewLiteralFragment(NewInt(8)), // 1
 		NewLiteralFragment(NewInt(4)), // 2
@@ -191,7 +191,7 @@ func TestVm_Execute_LE(t *testing.T) {
 }
 
 func TestVm_Execute_GT(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		NewOpcodeFragment(GT),         // 0
 		NewLiteralFragment(NewInt(8)), // 1
 		NewLiteralFragment(NewInt(4)), // 2
@@ -228,7 +228,7 @@ func TestVm_Execute_GT(t *testing.T) {
 }
 
 func TestVm_Execute_GE(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		NewOpcodeFragment(GE),         // 0
 		NewLiteralFragment(NewInt(8)), // 1
 		NewLiteralFragment(NewInt(4)), // 2
@@ -273,7 +273,7 @@ func TestVm_Execute_GE(t *testing.T) {
 }
 
 func TestVm_Execute_PRINT(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		NewOpcodeFragment(MSG),
 		NewLiteralFragment(NewString("hello, world")),
 		NewVariableFragment(NewVariable("message")),
@@ -301,7 +301,7 @@ func TestVm_Execute_PRINT(t *testing.T) {
 }
 
 func TestVm_Execute_MAIN_LABEL(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		NewLabelFragment("main"),
 		NewOpcodeFragment(MSG),
 		NewLiteralFragment(NewString("hello, world")),
@@ -330,7 +330,7 @@ func TestVm_Execute_MAIN_LABEL(t *testing.T) {
 }
 
 func TestVm_Execute_LABEL_JMP(t *testing.T) {
-	program := []*Fragment{
+	program := []Fragment{
 		NewDefLabelFragment("print"),
 		NewOpcodeFragment(MSG),
 		NewLiteralFragment(NewString("hello, world")),

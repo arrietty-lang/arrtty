@@ -56,7 +56,7 @@ func NewString(s string) *Literal {
 	}
 }
 
-func isSameLiteral(x1, x2 *Fragment) bool {
+func isSameLiteral(x1, x2 Fragment) bool {
 	if x1.Kind != LITERAL || x2.Kind != LITERAL {
 		return false
 	}

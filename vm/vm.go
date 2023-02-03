@@ -13,10 +13,10 @@ type Vm struct {
 	sp     int
 	zf     int
 
-	program   []*Fragment // 入力全体
-	stack     []*Fragment
-	registers map[string]*Fragment
-	data      map[string]*Fragment // like section .data
+	program   []Fragment // 入力全体
+	stack     []Fragment
+	registers map[string]Fragment
+	data      map[string]Fragment // like section .data
 	labels    map[string]int
 }
 
@@ -38,6 +38,9 @@ func (v *Vm) Export() string {
 		case LABEL:
 			result += curt.String()
 			pos++
+		default:
+			log.Println(result)
+			log.Fatalf("予期しない位置にデータを発見しました: %s", curt.String())
 		}
 		result += "\n"
 		if len(v.program) <= pos {
@@ -47,8 +50,8 @@ func (v *Vm) Export() string {
 	return result
 }
 
-func NewVm(program []*Fragment) *Vm {
-	stack := make([]*Fragment, 10)
+func NewVm(program []Fragment) *Vm {
+	stack := make([]Fragment, 100)
 	return &Vm{
 		wayOut:  false,
 		pc:      0,
@@ -57,7 +60,7 @@ func NewVm(program []*Fragment) *Vm {
 		zf:      0,
 		program: program,
 		stack:   stack,
-		registers: map[string]*Fragment{
+		registers: map[string]Fragment{
 			"R1":  {},
 			"R2":  {},
 			"R3":  {},
@@ -72,15 +75,29 @@ func NewVm(program []*Fragment) *Vm {
 			"EW":  {},
 			"ER":  {},
 		},
-		data:   map[string]*Fragment{},
+		data:   map[string]Fragment{},
 		labels: map[string]int{},
 	}
 }
 
-func (v *Vm) getRegister(r Register) (*Fragment, error) {
+func (v *Vm) pushStack(f Fragment) error {
+	v.sp--
+	v.stack[v.sp] = f
+	log.Printf("PUSH(INTO %v) %v", v.sp, f.String())
+	return nil
+}
+
+func (v *Vm) popStack() Fragment {
+	f := v.stack[v.sp]
+	v.sp++
+	log.Printf("POP(FROM %v) %v", v.sp-1, f.String())
+	return f
+}
+
+func (v *Vm) getRegister(r Register) (Fragment, error) {
 	reg, ok := v.registers[r.String()]
 	if !ok {
-		return nil, fmt.Errorf("unregistered register: %s", r.String())
+		return Fragment{}, fmt.Errorf("unregistered register: %s", r.String())
 	}
 	return reg, nil
 }
@@ -89,12 +106,12 @@ func (v *Vm) isProgramEof() bool {
 	return v.pc >= len(v.program)
 }
 
-func (v *Vm) currentProgram() *Fragment {
+func (v *Vm) currentProgram() Fragment {
 	return v.program[v.pc]
 }
 
-func (v *Vm) getArgs(n int) []*Fragment {
-	var args []*Fragment
+func (v *Vm) getArgs(n int) []Fragment {
+	var args []Fragment
 	for i := 0; i < n; i++ {
 		// なぜ+1しているのかは不明
 		// 参考: func operands()
@@ -124,7 +141,7 @@ func (v *Vm) scan() error {
 	for !v.isProgramEof() {
 		f := v.currentProgram()
 		if f.Kind == LABEL && f.Label.Define {
-			v.labels[f.Id] = v.pc
+			v.labels[f.Id] = v.pc + 1
 		}
 		v.pc++
 	}
@@ -163,6 +180,11 @@ func (v *Vm) Execute() error {
 		}
 		countOfOperand := opcode.CountOfOperand()
 		operands := v.getArgs(countOfOperand)
+		opr := ""
+		for _, o := range operands {
+			opr += o.String() + ", "
+		}
+		log.Printf("[%v] %s\t%v", v.pc, opcode.String(), opr)
 		err := v.execute(opcode, operands)
 		if err != nil {
 			return err
@@ -174,7 +196,7 @@ func (v *Vm) Execute() error {
 	return nil
 }
 
-func (v *Vm) execute(opcode *Fragment, operands []*Fragment) error {
+func (v *Vm) execute(opcode Fragment, operands []Fragment) error {
 	switch *opcode.Opcode {
 	case NOP:
 		return v.nop(operands)
@@ -223,14 +245,14 @@ func (v *Vm) execute(opcode *Fragment, operands []*Fragment) error {
 	return fmt.Errorf("unsupported opcode: %v", opcode.Opcode.String())
 }
 
-func (v *Vm) nop(operands []*Fragment) error {
+func (v *Vm) nop(operands []Fragment) error {
 	v.pc += 1 + len(operands)
 	return nil
 }
 
 //func set
 
-func (v *Vm) add(operands []*Fragment) error {
+func (v *Vm) add(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -266,12 +288,27 @@ func (v *Vm) add(operands []*Fragment) error {
 				return nil
 			}
 		}
-		// todo : address, ...
+	// todo : address, ...
+	case POINTER:
+		switch src.Kind {
+		case LITERAL:
+			if src.Literal.Type != Int {
+				return fmt.Errorf("ポインタに整数以外の即値を加えることはできません: %v", src.Literal.Type)
+			}
+			switch *dst.Pointer {
+			case BP:
+				v.bp += src.Literal.I
+				return nil
+			case SP:
+				v.sp += src.Literal.I
+				return nil
+			}
+		}
 	}
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) sub(operands []*Fragment) error {
+func (v *Vm) sub(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -308,11 +345,26 @@ func (v *Vm) sub(operands []*Fragment) error {
 			}
 		}
 		// todo : address, ...
+	case POINTER:
+		switch src.Kind {
+		case LITERAL:
+			if src.Literal.Type != Int {
+				return fmt.Errorf("ポインタから整数以外の即値を引くことはできません: %v", src.Literal.Type)
+			}
+			switch *dst.Pointer {
+			case BP:
+				v.bp -= src.Literal.I
+				return nil
+			case SP:
+				v.sp -= src.Literal.I
+				return nil
+			}
+		}
 	}
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) mul(operands []*Fragment) error {
+func (v *Vm) mul(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -353,7 +405,7 @@ func (v *Vm) mul(operands []*Fragment) error {
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) div(operands []*Fragment) error {
+func (v *Vm) div(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -394,7 +446,7 @@ func (v *Vm) div(operands []*Fragment) error {
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) mov(operands []*Fragment) error {
+func (v *Vm) mov(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -402,29 +454,29 @@ func (v *Vm) mov(operands []*Fragment) error {
 	dst := operands[1]
 	switch dst.Kind {
 	case REGISTER:
-		dstReg, err := v.getRegister(*dst.Register)
-		if err != nil {
-			return err
-		}
+		//dstReg, err := v.getRegister(*dst.Register)
+		//if err != nil {
+		//	return err
+		//}
 		switch src.Kind {
 		case REGISTER:
 			srcReg, err := v.getRegister(*src.Register)
 			if err != nil {
 				return err
 			}
-			*dstReg = *srcReg
+			v.registers[dst.Register.String()] = srcReg
 			return nil
 		case LITERAL:
-			dstReg.Kind = LITERAL
-			dstReg.Literal = src.Literal
+			v.registers[dst.Register.String()] = src
+			//dstReg.Literal = src.Literal
 			return nil
 		case VARIABLE:
-			dstReg.Kind = LITERAL
+			//dstReg.Kind = LITERAL
 			value, ok := v.data[src.Variable.Name]
 			if !ok {
 				return fmt.Errorf("%s is not defined", src.Variable.Name)
 			}
-			dstReg.Literal = value.Literal
+			v.registers[dst.Register.String()] = value
 			return nil
 		}
 	case POINTER:
@@ -445,11 +497,35 @@ func (v *Vm) mov(operands []*Fragment) error {
 				}
 			}
 		}
+	case ADDRESS:
+		switch src.Kind {
+		case ADDRESS:
+			switch dst.Address.Original {
+			case BP:
+				switch src.Address.Original {
+				case SP:
+					v.stack[v.bp+dst.Address.Relative] = v.stack[v.sp+src.Address.Relative]
+					return nil
+				case BP:
+					v.stack[v.bp+dst.Address.Relative] = v.stack[v.bp+src.Address.Relative]
+					return nil
+				}
+			case SP:
+				switch src.Address.Original {
+				case BP:
+					v.stack[v.sp+dst.Address.Relative] = v.stack[v.bp+src.Address.Relative]
+					return nil
+				case SP:
+					v.stack[v.sp+dst.Address.Relative] = v.stack[v.sp+src.Address.Relative]
+					return nil
+				}
+			}
+		}
 	}
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) cmp(operands []*Fragment) error {
+func (v *Vm) cmp(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -512,7 +588,7 @@ func (v *Vm) cmp(operands []*Fragment) error {
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) lt(operands []*Fragment) error {
+func (v *Vm) lt(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -622,7 +698,7 @@ func (v *Vm) lt(operands []*Fragment) error {
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) le(operands []*Fragment) error {
+func (v *Vm) le(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -732,21 +808,21 @@ func (v *Vm) le(operands []*Fragment) error {
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) gt(operands []*Fragment) error {
-	tmp := *operands[0]
+func (v *Vm) gt(operands []Fragment) error {
+	tmp := operands[0]
 	operands[0] = operands[1]
-	operands[1] = &tmp
+	operands[1] = tmp
 	return v.lt(operands)
 }
 
-func (v *Vm) ge(operands []*Fragment) error {
-	tmp := *operands[0]
+func (v *Vm) ge(operands []Fragment) error {
+	tmp := operands[0]
 	operands[0] = operands[1]
-	operands[1] = &tmp
+	operands[1] = tmp
 	return v.le(operands)
 }
 
-func (v *Vm) jmp(operands []*Fragment) error {
+func (v *Vm) jmp(operands []Fragment) error {
 	x := operands[0]
 	if x.Kind == LABEL {
 		loc, ok := v.labels[x.Label.Id]
@@ -764,7 +840,7 @@ func (v *Vm) jmp(operands []*Fragment) error {
 	return nil
 }
 
-func (v *Vm) jz(operands []*Fragment) error {
+func (v *Vm) jz(operands []Fragment) error {
 	// JUMP IF ZERO (ZFが1であればジャンプ)
 	x := operands[0]
 	switch x.Kind {
@@ -789,7 +865,7 @@ func (v *Vm) jz(operands []*Fragment) error {
 	return nil
 }
 
-func (v *Vm) push(operands []*Fragment) error {
+func (v *Vm) push(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -800,100 +876,111 @@ func (v *Vm) push(operands []*Fragment) error {
 		if err != nil {
 			return err
 		}
-		if err = v.subSPSafe(1); err != nil {
-			return err
-		}
-		v.stack[v.sp] = sourceValue
+		//if err = v.subSPSafe(1); err != nil {
+		//	return err
+		//}
+		//v.stack[v.sp] = sourceValue
+		_ = v.pushStack(sourceValue)
 		return nil
 	case POINTER:
 		switch *source.Pointer {
 		case BP:
 			sourceValue := NewLiteralFragment(NewInt(v.bp))
-			if err := v.subSPSafe(1); err != nil {
-				return err
-			}
-			v.stack[v.sp] = sourceValue
+			//if err := v.subSPSafe(1); err != nil {
+			//	return err
+			//}
+			//v.stack[v.sp] = sourceValue
+			_ = v.pushStack(sourceValue)
 			return nil
 		case SP:
 			sourceValue := NewLiteralFragment(NewInt(v.sp))
-			if err := v.subSPSafe(1); err != nil {
-				return err
-			}
-			v.stack[v.sp] = sourceValue
+			//if err := v.subSPSafe(1); err != nil {
+			//	return err
+			//}
+			//v.stack[v.sp] = sourceValue
+			_ = v.pushStack(sourceValue)
 			return nil
 		}
 	case ADDRESS:
 		switch source.Address.Original {
 		case BP:
 			sourceValue := v.stack[v.bp+source.Address.Relative]
-			if err := v.subSPSafe(1); err != nil {
-				return err
-			}
-			v.stack[v.sp] = sourceValue
+			//if err := v.subSPSafe(1); err != nil {
+			//	return err
+			//}
+			//v.stack[v.sp] = sourceValue
+			_ = v.pushStack(sourceValue)
 			return nil
 		case SP:
 			sourceValue := v.stack[v.sp+source.Address.Relative]
-			if err := v.subSPSafe(1); err != nil {
-				return err
-			}
-			v.stack[v.sp] = sourceValue
+			//if err := v.subSPSafe(1); err != nil {
+			//	return err
+			//}
+			//v.stack[v.sp] = sourceValue
+			_ = v.pushStack(sourceValue)
 			return nil
 		}
 	case LITERAL:
-		if err := v.subSPSafe(1); err != nil {
-			return err
-		}
-		v.stack[v.sp] = source
+		//if err := v.subSPSafe(1); err != nil {
+		//	return err
+		//}
+		//v.stack[v.sp] = source
+		_ = v.pushStack(source)
 		return nil
 	}
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) pop(operands []*Fragment) error {
+func (v *Vm) pop(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
 	dst := operands[0]
 	switch dst.Kind {
 	case REGISTER:
-		dstReg, err := v.getRegister(*dst.Register)
-		if err != nil {
-			return err
-		}
-		*dstReg = *v.stack[v.sp]
-		return v.addSPSafe(1)
+		//dstReg, err := v.getRegister(*dst.Register)
+		//if err != nil {
+		//	return err
+		//}
+		//*dstReg = *v.stack[v.sp]
+		r := v.popStack()
+		v.registers[dst.Register.String()] = r
+		return nil
 	case POINTER:
 		switch *dst.Pointer {
 		case BP:
-			value := v.stack[v.sp]
+			//value := v.stack[v.sp]
+			value := v.popStack()
 			if value.Kind != LITERAL || value.Literal.Type != Int {
 				return fmt.Errorf("only integers can be assigned to bp")
 			}
 			v.bp = value.I
-			return v.addSPSafe(1)
+			return nil
 		case SP:
-			value := v.stack[v.sp]
+			//value := v.stack[v.sp]
+			value := v.popStack()
 			if value.Kind != LITERAL || value.Literal.Type != Int {
 				return fmt.Errorf("only integers can be assigned to sp")
 			}
 			v.sp = value.I
-			return v.addSPSafe(1)
+			return nil
 		}
 	case ADDRESS:
-		value := v.stack[v.sp]
+		//value := v.stack[v.sp]
+		value := v.popStack()
 		switch dst.Address.Original {
 		case BP:
 			v.stack[v.bp+dst.Address.Relative] = value
-			return v.addSPSafe(1)
+			return nil
 		case SP:
 			v.stack[v.sp+dst.Address.Relative] = value
-			return v.addSPSafe(1)
+			return nil
 		}
 	}
 	return fmt.Errorf("unsupported")
 }
 
-func (v *Vm) call(operands []*Fragment) error {
+func (v *Vm) call(operands []Fragment) error {
 	// 行き先がまともか？
 	newLocation := operands[0]
 	//if newLocation.Kind != LITERAL || newLocation.Literal.Type != Int {
@@ -917,20 +1004,22 @@ func (v *Vm) call(operands []*Fragment) error {
 		return fmt.Errorf("unsupported")
 	}
 	// 戻ってくるところを保存
-	if err := v.subSPSafe(1); err != nil {
-		return err
-	}
-	v.stack[v.sp] = NewLiteralFragment(NewInt(v.pc + 2))
+	//if err := v.subSPSafe(1); err != nil {
+	//	return err
+	//}
+	//v.stack[v.sp] = NewLiteralFragment(NewInt(v.pc + 2))
+	_ = v.pushStack(NewLiteralFragment(NewInt(v.pc + 2)))
 	v.pc = loc
 	return nil
 }
 
-func (v *Vm) ret(operands []*Fragment) error {
+func (v *Vm) ret(operands []Fragment) error {
 	_ = operands
-	rtnLocation := v.stack[v.sp]
-	if err := v.addSPSafe(1); err != nil {
-		return err
-	}
+	//rtnLocation := v.stack[v.sp]
+	//if err := v.addSPSafe(1); err != nil {
+	//	return err
+	//}
+	rtnLocation := v.popStack()
 	if rtnLocation.Kind != LITERAL || rtnLocation.Literal.Type != Int {
 		return fmt.Errorf("unsupported")
 	}
@@ -938,13 +1027,13 @@ func (v *Vm) ret(operands []*Fragment) error {
 	return nil
 }
 
-func (v *Vm) exit(operands []*Fragment) error {
+func (v *Vm) exit(operands []Fragment) error {
 	v.wayOut = true
 	_ = operands
 	return nil
 }
 
-func (v *Vm) msg(operands []*Fragment) error {
+func (v *Vm) msg(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -957,7 +1046,7 @@ func (v *Vm) msg(operands []*Fragment) error {
 	return nil
 }
 
-func (v *Vm) len(operands []*Fragment) error {
+func (v *Vm) len(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()
@@ -975,7 +1064,7 @@ func (v *Vm) len(operands []*Fragment) error {
 	return nil
 }
 
-func (v *Vm) syscall(operands []*Fragment) error {
+func (v *Vm) syscall(operands []Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
 	}()

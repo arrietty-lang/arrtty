@@ -624,19 +624,29 @@ func types() (*Node, error) {
 
 func callArgs() (*Node, error) {
 	var args []*Node
-	first, err := expr()
-	if err != nil {
-		return nil, err
-	}
-	args = append(args, first)
-	for consumeKind(tokenize.Comma) != nil {
+	//first, err := expr()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//args = append(args, first)
+	//for consumeKind(tokenize.Comma) != nil {
+	//	arg, err := expr()
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	args = append(args, arg)
+	//}
+	for {
 		arg, err := expr()
 		if err != nil {
 			return nil, err
 		}
 		args = append(args, arg)
+		if consumeKind(tokenize.Comma) == nil {
+			break
+		}
 	}
-	return NewPolynomialNode(NdArgs, first.Pos, args), nil
+	return NewPolynomialNode(NdArgs, args[0].Pos, args), nil
 }
 
 func funcParams() (*Node, error) {
