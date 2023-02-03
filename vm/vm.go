@@ -182,6 +182,10 @@ func (v *Vm) execute(opcode *Fragment, operands []*Fragment) error {
 		return v.add(operands)
 	case SUB:
 		return v.sub(operands)
+	case MUL:
+		return v.mul(operands)
+	case DIV:
+		return v.div(operands)
 	case MOV:
 		return v.mov(operands)
 	case CMP:

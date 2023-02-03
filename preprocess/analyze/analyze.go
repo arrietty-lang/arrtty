@@ -478,7 +478,7 @@ func access(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 	switch node.Kind {
 	case parse.NdParenthesis:
-		return expr(node, functionName)
+		return expr(node.UnaryField.Value, functionName)
 	case parse.NdIdent:
 		if node.IdentField.Ident == "true" || node.IdentField.Ident == "false" {
 			return dataTypes(parse.RuntimeBool), nil

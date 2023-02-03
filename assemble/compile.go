@@ -135,6 +135,44 @@ func add(node *parse.Node) ([]*vm.Fragment, error) {
 }
 
 func mul(node *parse.Node) ([]*vm.Fragment, error) {
+	var program []*vm.Fragment
+	switch node.Kind {
+	case parse.NdMul, parse.NdDiv:
+		var op vm.Opcode
+		if node.Kind == parse.NdMul {
+			op = vm.MUL
+		} else {
+			op = vm.DIV
+		}
+		// 左辺を計算
+		lhs, err := mul(node.BinaryField.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, lhs...)
+		// 右辺を計算
+		rhs, err := mul(node.BinaryField.Rhs)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, rhs...)
+		// 結果をスタックから取り出す
+		program = append(program, []*vm.Fragment{
+			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R2), // 右辺
+			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R1), // 左辺
+		}...)
+		// 掛け算割り算
+		program = append(program, []*vm.Fragment{
+			// r1 += r2
+			vm.NewOpcodeFragment(op), vm.NewRegisterFragment(vm.R2), vm.NewRegisterFragment(vm.R1),
+		}...)
+		// 結果R1をスタックにプッシュ
+		program = append(program, []*vm.Fragment{
+			vm.NewOpcodeFragment(vm.PUSH), vm.NewRegisterFragment(vm.R1),
+		}...)
+		return program, nil
+
+	}
 	return unary(node)
 }
 
@@ -160,6 +198,8 @@ func literal(node *parse.Node) ([]*vm.Fragment, error) {
 				vm.NewLiteralFragment(vm.NewInt(node.LiteralField.I)),
 			}, nil
 		}
+	case parse.NdParenthesis:
+		return expr(node.UnaryField.Value)
 	}
 	return nil, fmt.Errorf("サポートされていないリテラルです")
 }
