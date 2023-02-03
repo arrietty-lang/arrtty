@@ -8,10 +8,10 @@ golangに互換 のある形を取りたい
 トークンが構文規則に従っているかをチェック
 3. analyze -> semantic node treeを生成  
 各ノードの型関係を調べながら扱いやすい形に整形する
-4. assemble -> operation chainを生成  
-vmに対する命令に変換する
-5. link -> linked operation chainを生成  
+4. link -> linked operation chainを生成  
 所謂リンカのように複数のoperation chainを組み合わせて欠損を埋め、vmが実行可能な命令を作る
+5. assemble -> operation chainを生成  
+vmに対する命令に変換する
 6. vm -> result  
 最終的な演算を行い結果を返却する
 
