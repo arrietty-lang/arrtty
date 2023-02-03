@@ -10,6 +10,8 @@ const (
 	ADD
 	// SUB `sub x1 x2`でx2 -= x1
 	SUB
+	MUL
+	DIV
 	// CMP `cmp x1 x2`で一致したらZF=1, そうでなければZF=0
 	CMP
 	LT
@@ -50,6 +52,10 @@ func (o Opcode) CountOfOperand() int {
 	case ADD:
 		return 2
 	case SUB:
+		return 2
+	case MUL:
+		return 2
+	case DIV:
 		return 2
 	case CMP:
 		return 2
@@ -106,6 +112,8 @@ var opcodes = [...]string{
 	SET:     "SET",
 	ADD:     "ADD",
 	SUB:     "SUB",
+	MUL:     "MUL",
+	DIV:     "DIV",
 	CMP:     "CMP",
 	LT:      "LT",
 	GT:      "GT",

@@ -308,6 +308,88 @@ func (v *Vm) sub(operands []*Fragment) error {
 	return fmt.Errorf("unsupported")
 }
 
+func (v *Vm) mul(operands []*Fragment) error {
+	defer func() {
+		v.pc += 1 + len(operands)
+	}()
+	src := operands[0]
+	dst := operands[1]
+	switch dst.Kind {
+	case REGISTER:
+		switch src.Kind {
+		case REGISTER:
+			dstReg, err := v.getRegister(*dst.Register)
+			if err != nil {
+				return err
+			}
+			srcReg, err := v.getRegister(*src.Register)
+			if err != nil {
+				return err
+			}
+			if dstReg.Literal.Type == Int && srcReg.Literal.Type == Float {
+				// src(float)をintにキャストする必要があるのでこれはエラー
+				return fmt.Errorf("少数を整数として扱うことはできません")
+			}
+			if dstReg.Literal.Type == Float && srcReg.Literal.Type == Int {
+				// intをfloatにキャストするのはok
+				dstReg.Literal.F *= float64(srcReg.Literal.I)
+				return nil
+			}
+			if dstReg.Literal.Type == srcReg.Literal.Type && dstReg.Literal.Type == Int {
+				dstReg.Literal.I *= srcReg.Literal.I
+				return nil
+			}
+			if dstReg.Literal.Type == srcReg.Literal.Type && dstReg.Literal.Type == Float {
+				dstReg.Literal.F *= srcReg.Literal.F
+				return nil
+			}
+		}
+		// todo : address, ...
+	}
+	return fmt.Errorf("unsupported")
+}
+
+func (v *Vm) div(operands []*Fragment) error {
+	defer func() {
+		v.pc += 1 + len(operands)
+	}()
+	src := operands[0]
+	dst := operands[1]
+	switch dst.Kind {
+	case REGISTER:
+		switch src.Kind {
+		case REGISTER:
+			dstReg, err := v.getRegister(*dst.Register)
+			if err != nil {
+				return err
+			}
+			srcReg, err := v.getRegister(*src.Register)
+			if err != nil {
+				return err
+			}
+			if dstReg.Literal.Type == Int && srcReg.Literal.Type == Float {
+				// src(float)をintにキャストする必要があるのでこれはエラー
+				return fmt.Errorf("少数を整数として扱うことはできません")
+			}
+			if dstReg.Literal.Type == Float && srcReg.Literal.Type == Int {
+				// intをfloatにキャストするのはok
+				dstReg.Literal.F /= float64(srcReg.Literal.I)
+				return nil
+			}
+			if dstReg.Literal.Type == srcReg.Literal.Type && dstReg.Literal.Type == Int {
+				dstReg.Literal.I /= srcReg.Literal.I
+				return nil
+			}
+			if dstReg.Literal.Type == srcReg.Literal.Type && dstReg.Literal.Type == Float {
+				dstReg.Literal.F /= srcReg.Literal.F
+				return nil
+			}
+		}
+		// todo : address, ...
+	}
+	return fmt.Errorf("unsupported")
+}
+
 func (v *Vm) mov(operands []*Fragment) error {
 	defer func() {
 		v.pc += 1 + len(operands)
