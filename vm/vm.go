@@ -20,28 +20,57 @@ type Vm struct {
 	labels    map[string]int
 }
 
+func (v *Vm) Export() string {
+	var result string
+	pos := 0
+	for {
+		curt := v.program[pos]
+		switch curt.Kind {
+		case OPCODE:
+			result += "\t" + curt.Opcode.String()
+			for i := 1; i < curt.Opcode.CountOfOperand()+1; i++ {
+				result += " " + v.program[pos+i].String()
+				if i != curt.Opcode.CountOfOperand() {
+					result += ","
+				}
+			}
+			pos += 1 + curt.Opcode.CountOfOperand()
+		case LABEL:
+			result += curt.String()
+			pos++
+		}
+		result += "\n"
+		if len(v.program) <= pos {
+			break
+		}
+	}
+	return result
+}
+
 func NewVm(program []*Fragment) *Vm {
 	stack := make([]*Fragment, 10)
 	return &Vm{
 		wayOut:  false,
 		pc:      0,
-		bp:      0,
+		bp:      len(stack) - 1,
 		sp:      len(stack) - 1,
 		zf:      0,
 		program: program,
 		stack:   stack,
 		registers: map[string]*Fragment{
-			"R1": {},
-			"R2": {},
-			"R3": {},
-			"R4": {},
-			"R5": {},
-			"EC": {},
-			"ED": {},
-			"EM": {},
-			"EP": {},
-			"EW": {},
-			"ER": {},
+			"R1":  {},
+			"R2":  {},
+			"R3":  {},
+			"R4":  {},
+			"R5":  {},
+			"R10": {},
+			"R11": {},
+			"EC":  {},
+			"ED":  {},
+			"EM":  {},
+			"EP":  {},
+			"EW":  {},
+			"ER":  {},
 		},
 		data:   map[string]*Fragment{},
 		labels: map[string]int{},
@@ -104,9 +133,12 @@ func (v *Vm) scan() error {
 }
 
 func (v *Vm) ExitCode() int {
-	f, err := v.getRegister(R1)
+	f, err := v.getRegister(R10)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if f.Kind == ILLEGAL {
+		return 0
 	}
 	if f.Kind != LITERAL || f.Literal.Type != Int {
 		log.Fatal("終了コードが不正な値です")

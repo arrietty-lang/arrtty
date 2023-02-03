@@ -1,5 +1,7 @@
 package vm
 
+import "strconv"
+
 type LiteralType int
 
 const (
@@ -13,6 +15,18 @@ type Literal struct {
 	I    int
 	F    float64
 	S    string
+}
+
+func (l *Literal) String() string {
+	switch l.Type {
+	case Int:
+		return strconv.Itoa(l.I)
+	case Float:
+		return strconv.FormatFloat(l.F, 'f', -1, 64)
+	case String:
+		return l.S
+	}
+	return ""
 }
 
 func NewInt(i int) *Literal {
