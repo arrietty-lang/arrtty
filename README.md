@@ -1,19 +1,22 @@
 # arrtty
 golangに互換 のある形を取りたい
 
-### 処理(予定)
-1. tokenize -> token chainを生成  
-文字列を規則に従い切り分ける
-2. parse -> syntax node treeを生成  
-トークンが構文規則に従っているかをチェック
-3. analyze -> semantic node treeを生成  
-各ノードの型関係を調べながら扱いやすい形に整形する
-4. link -> linked operation chainを生成  
-所謂リンカのように複数のoperation chainを組み合わせて欠損を埋め、vmが実行可能な命令を作る
-5. assemble -> operation chainを生成  
-vmに対する命令に変換する
-6. vm -> result  
-最終的な演算を行い結果を返却する
+### 処理
+- preprocess
+  - tokenize : 文字列を分類し切り分ける
+  - parse : 構文解析を行い読み込むことのできるコードか確認する(ここで生成されたnodeはassembleまで使用される)
+  - analyze : 意味解析を行い型が一致しているかを確認する
+- assemble
+  - link : 意味解析された複数の意味ノード?を組み合わせ欠損のない意味ノードを作成する
+  - compile : 欠損のない意味ノードからバーチャルマシン用の命令を作成する
+- vm : 命令を実行するスタックマシン
+
+### 機能
+- vm
+  - メイン関数から整数を終了コードとして返却できる
+  - 関数を呼び出すことができる
+  - 関数に引数を渡すことができる
+  - 関数からの戻り値を取得できる
 
 ### 文法
 ```text
