@@ -87,6 +87,10 @@ func function(node *parse.Node) error {
 	if !isSameType(definedReturnTypes, analyzedReturnTypes) {
 		return fmt.Errorf("戻り値の型が定義と一致しません")
 	}
+
+	if name == "main" && (!isSameType(analyzedReturnTypes, nil) && !isSameType(analyzedReturnTypes, dataTypes(parse.RuntimeInt))) {
+		return fmt.Errorf("mainはInt, なし, 以外の戻り値の型をサポートしていません")
+	}
 	return nil
 }
 

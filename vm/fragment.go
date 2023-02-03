@@ -3,7 +3,7 @@ package vm
 type FragmentKind int
 
 const (
-	_ FragmentKind = iota
+	ILLEGAL FragmentKind = iota
 	OPCODE
 	LITERAL
 	ADDRESS
@@ -22,6 +22,26 @@ type Fragment struct {
 	*Pointer
 	*Variable
 	*Label
+}
+
+func (f *Fragment) String() string {
+	switch f.Kind {
+	case OPCODE:
+		return f.Opcode.String()
+	case LITERAL:
+		return f.Literal.String()
+	case ADDRESS:
+		return f.Address.String()
+	case REGISTER:
+		return f.Register.String()
+	case POINTER:
+		return f.Pointer.String()
+	case VARIABLE:
+		return f.Variable.String()
+	case LABEL:
+		return f.Label.String()
+	}
+	return ""
 }
 
 func NewOpcodeFragment(opcode Opcode) *Fragment {

@@ -1,6 +1,7 @@
 package assemble_test
 
 import (
+	"fmt"
 	"github.com/arrietty-lang/arrtty/assemble"
 	"github.com/arrietty-lang/arrtty/preprocess/analyze"
 	"github.com/arrietty-lang/arrtty/preprocess/parse"
@@ -12,8 +13,8 @@ import (
 
 func TestCompile_1(t *testing.T) {
 	code := `
-	func main() {
-		//return 1
+	func main() int {
+		return 1000
 	}
 	`
 	token, err := tokenize.Tokenize(code)
@@ -40,9 +41,10 @@ func TestCompile_1(t *testing.T) {
 	}
 
 	v := vm.NewVm(fragments)
+	fmt.Println(v.Export())
 	err = v.Execute()
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, 0, v.ExitCode())
+	assert.Equal(t, 1000, v.ExitCode())
 }
