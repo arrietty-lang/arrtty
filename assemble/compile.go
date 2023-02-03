@@ -95,7 +95,14 @@ func relation(node *parse.Node) ([]*vm.Fragment, error) {
 func add(node *parse.Node) ([]*vm.Fragment, error) {
 	var program []*vm.Fragment
 	switch node.Kind {
-	case parse.NdAdd:
+	case parse.NdAdd, parse.NdSub:
+		var op vm.Opcode
+		if node.Kind == parse.NdAdd {
+			op = vm.ADD
+		} else {
+			op = vm.SUB
+		}
+
 		// 左辺を計算
 		lhs, err := add(node.BinaryField.Lhs)
 		if err != nil {
@@ -113,10 +120,10 @@ func add(node *parse.Node) ([]*vm.Fragment, error) {
 			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R2), // 右辺
 			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R1), // 左辺
 		}...)
-		// 足し算
+		// 足し算/引き算
 		program = append(program, []*vm.Fragment{
 			// r1 += r2
-			vm.NewOpcodeFragment(vm.ADD), vm.NewRegisterFragment(vm.R2), vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(op), vm.NewRegisterFragment(vm.R2), vm.NewRegisterFragment(vm.R1),
 		}...)
 		// 結果R1をスタックにプッシュ
 		program = append(program, []*vm.Fragment{
