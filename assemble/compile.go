@@ -61,9 +61,15 @@ func stmt(node *parse.Node) ([]*vm.Fragment, error) {
 			if err != nil {
 				return nil, err
 			}
-			program = append(program, []*vm.Fragment{vm.NewOpcodeFragment(vm.MOV)}...)
 			program = append(program, rv...)
-			program = append(program, []*vm.Fragment{vm.NewRegisterFragment(returnRegs[i])}...)
+			// 計算結果をR1に移動
+			program = append(program, []*vm.Fragment{
+				vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R1),
+			}...)
+			program = append(program, []*vm.Fragment{
+				vm.NewOpcodeFragment(vm.MOV),
+				vm.NewRegisterFragment(vm.R1),
+				vm.NewRegisterFragment(returnRegs[i])}...)
 		}
 		return program, nil
 	}
@@ -87,6 +93,37 @@ func relation(node *parse.Node) ([]*vm.Fragment, error) {
 }
 
 func add(node *parse.Node) ([]*vm.Fragment, error) {
+	var program []*vm.Fragment
+	switch node.Kind {
+	case parse.NdAdd:
+		// 左辺を計算
+		lhs, err := add(node.BinaryField.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, lhs...)
+		// 右辺を計算
+		rhs, err := add(node.BinaryField.Rhs)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, rhs...)
+		// 結果をスタックから取り出す
+		program = append(program, []*vm.Fragment{
+			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R2), // 右辺
+			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R1), // 左辺
+		}...)
+		// 足し算
+		program = append(program, []*vm.Fragment{
+			// r1 += r2
+			vm.NewOpcodeFragment(vm.ADD), vm.NewRegisterFragment(vm.R2), vm.NewRegisterFragment(vm.R1),
+		}...)
+		// 結果R1をスタックにプッシュ
+		program = append(program, []*vm.Fragment{
+			vm.NewOpcodeFragment(vm.PUSH), vm.NewRegisterFragment(vm.R1),
+		}...)
+		return program, nil
+	}
 	return mul(node)
 }
 
@@ -111,7 +148,10 @@ func literal(node *parse.Node) ([]*vm.Fragment, error) {
 	case parse.NdLiteral:
 		switch node.LiteralField.Kind {
 		case tokenize.LInt:
-			return []*vm.Fragment{vm.NewLiteralFragment(vm.NewInt(node.LiteralField.I))}, nil
+			return []*vm.Fragment{
+				vm.NewOpcodeFragment(vm.PUSH),
+				vm.NewLiteralFragment(vm.NewInt(node.LiteralField.I)),
+			}, nil
 		}
 	}
 	return nil, fmt.Errorf("サポートされていないリテラルです")

@@ -753,6 +753,12 @@ func (v *Vm) push(operands []*Fragment) error {
 			v.stack[v.sp] = sourceValue
 			return nil
 		}
+	case LITERAL:
+		if err := v.subSPSafe(1); err != nil {
+			return err
+		}
+		v.stack[v.sp] = source
+		return nil
 	}
 	return fmt.Errorf("unsupported")
 }
