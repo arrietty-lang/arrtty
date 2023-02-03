@@ -41,9 +41,12 @@ func defFunction(node *parse.Node) ([]*vm.Fragment, error) {
 
 		vm.NewOpcodeFragment(vm.POP),
 		vm.NewPointerFragment(vm.BP),
-
-		//vm.NewOpcodeFragment(vm.RET),
 	}...)
+	if defFn.Identifier.IdentField.Ident != "main" {
+		program = append(program, []*vm.Fragment{
+			vm.NewOpcodeFragment(vm.RET),
+		}...)
+	}
 
 	return program, nil
 }
@@ -208,14 +211,7 @@ func Compile(sem *analyze.Semantics) ([]*vm.Fragment, error) {
 	if len(sem.OutsideValues) != 0 || len(sem.OutsideFunctions) != 0 {
 		return nil, fmt.Errorf("リンクが不完全です")
 	}
-
-	program := []*vm.Fragment{
-		//vm.NewOpcodeFragment(vm.CALL),
-		//vm.NewLabelFragment("main"),
-		//vm.NewOpcodeFragment(vm.EXIT),
-	}
-	//var program []*vm.Fragment
-
+	var program []*vm.Fragment
 	for _, n := range sem.Tree {
 		switch n.Kind {
 		case parse.NdFuncDef:
@@ -227,14 +223,5 @@ func Compile(sem *analyze.Semantics) ([]*vm.Fragment, error) {
 
 		}
 	}
-
-	//if !isMainReturned {
-	//	program = append(program, []*vm.Fragment{
-	//		vm.NewOpcodeFragment(vm.MOV),
-	//		vm.NewLiteralFragment(vm.NewInt(0)),
-	//		vm.NewRegisterFragment(vm.R1),
-	//	}...)
-	//}
-
 	return program, nil
 }
