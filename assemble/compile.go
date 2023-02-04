@@ -41,6 +41,7 @@ func defFunction(node *parse.Node) ([]vm.Fragment, error) {
 	}
 
 	// 関数で使用されている変数(引数もむくむ)のBPからの距離
+	var totalVariables = 0
 	var varDistFromBP = map[int]map[string]int{}
 	var dist = 1
 	for nest, variables := range semOverall.KnownValues[defFn.Identifier.IdentField.Ident] {
@@ -48,17 +49,20 @@ func defFunction(node *parse.Node) ([]vm.Fragment, error) {
 		for varName := range variables {
 			varDistFromBP[nest][varName] = dist
 			dist++
+			totalVariables++
 		}
 	}
 	currentFnVariableBPs = varDistFromBP
 
+	// 関数内で使用される変数の数だけSPを下げる(変数用の領域確保)
+	program = append(program, []vm.Fragment{
+		vm.NewOpcodeFragment(vm.SUB),
+		vm.NewLiteralFragment(vm.NewInt(totalVariables)),
+		vm.NewPointerFragment(vm.SP),
+	}...)
+
 	// 引数と変数を結びつける(代入によって)
 	if defFn.Parameters != nil {
-		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.SUB),
-			vm.NewLiteralFragment(vm.NewInt(len(defFn.Parameters.PolynomialField.Values))),
-			vm.NewPointerFragment(vm.SP),
-		}...)
 		for i, param := range defFn.Parameters.PolynomialField.Values {
 			program = append(program, []vm.Fragment{
 				vm.NewOpcodeFragment(vm.MOV),
