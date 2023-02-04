@@ -503,7 +503,11 @@ func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 			outsideValues = append(outsideValues, node)
 			return dataTypes(parse.RuntimeUnknown), nil
 		}
-		return nil, fmt.Errorf("%s is not defined", node.IdentField.Ident)
+		typ, ok := knownValues["-global-"][0][node.IdentField.Ident]
+		if !ok {
+			return nil, fmt.Errorf("ana: %s is not defined", node.IdentField.Ident)
+		}
+		return typ, nil
 	case parse.NdCall:
 		// 期待する引数型
 		typ, ok := knownFunction[node.CallField.Identifier.IdentField.Ident]

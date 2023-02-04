@@ -12,6 +12,9 @@ var semOverall *analyze.Semantics
 var currentNest int
 var currentFnVariableBPs map[int]map[string]int
 
+// var globals []string
+var dataSection []vm.Fragment
+
 func searchBPDistFromVarName(variables map[int]map[string]int, nest int, varName string) int {
 	for name, distance := range variables[nest] {
 		if varName == name {
@@ -136,6 +139,41 @@ func stmt(node *parse.Node) ([]vm.Fragment, error) {
 				vm.NewRegisterFragment(returnRegs[i])}...)
 		}
 		return program, nil
+	case parse.NdAssign:
+		//lit, err := literal(node.AssignField.Value)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//dataSection = append(dataSection, []vm.Fragment{
+		//	vm.NewOpcodeFragment(vm.MOV),
+		//}...)
+		//dataSection = append(dataSection, lit...)
+		//dataSection = append(dataSection, []vm.Fragment{
+		//	vm.NewLabelFragment(node.AssignField.To.IdentField.Ident),
+		//}...)
+
+		val, err := expr(node.AssignField.Value)
+		if err != nil {
+			return nil, err
+		}
+		loc := searchBPDistFromVarName(currentFnVariableBPs, currentNest, node.AssignField.To.VarDeclField.Identifier.IdentField.Ident)
+		if loc == -1 {
+			return nil, fmt.Errorf("変数の位置を特定できませんでした: %v", node.AssignField.To.IdentField.Ident)
+		}
+		program = append(program, val...)
+		program = append(program, []vm.Fragment{
+			// valの結果を取り出す
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R1),
+
+			// 変数の場所に格納
+			vm.NewOpcodeFragment(vm.MOV),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewAddressFragment(vm.NewAddress(vm.BP, -loc)),
+		}...)
+		return program, nil
+	case parse.NdVarDecl:
+
 	}
 	return nil, fmt.Errorf("unsupport node kind")
 }
@@ -303,6 +341,7 @@ func literal(node *parse.Node) ([]vm.Fragment, error) {
 	case parse.NdIdent:
 		loc := searchBPDistFromVarName(currentFnVariableBPs, currentNest, node.IdentField.Ident)
 		if loc == -1 {
+			//if
 			return nil, fmt.Errorf("変数が定義されていません: %s", node.IdentField.Ident)
 		}
 		return []vm.Fragment{
@@ -328,8 +367,12 @@ func Compile(sem *analyze.Semantics) ([]vm.Fragment, error) {
 				return nil, err
 			}
 			program = append(program, frags...)
-
+		case parse.NdAssign:
+		case parse.NdVarDecl:
 		}
 	}
+
+	program = append(program, vm.NewDefLabelFragment(".data"))
+	program = append(program, dataSection...)
 	return program, nil
 }

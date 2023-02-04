@@ -238,6 +238,17 @@ func TestCompile_CALL(t *testing.T) {
 				}`,
 			15,
 		},
+		{
+			"g",
+			`
+				func main() int {
+					var a int = 1
+					var b int  = a + 1
+					return b
+				}
+				`,
+			2,
+		},
 	}
 
 	for _, tt := range tests {

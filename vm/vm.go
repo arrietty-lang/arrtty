@@ -149,6 +149,36 @@ func (v *Vm) scan() error {
 	return nil
 }
 
+func (v *Vm) dataSection() error {
+	pc, ok := v.labels[".data"]
+	if !ok {
+		return nil
+	}
+	v.pc = pc
+	for !v.isProgramEof() {
+		opcode := v.currentProgram()
+		if opcode.Kind == LABEL && opcode.Label.Define {
+			v.pc++
+			continue
+		}
+		countOfOperand := opcode.CountOfOperand()
+		operands := v.getArgs(countOfOperand)
+		opr := ""
+		for _, o := range operands {
+			opr += o.String() + ", "
+		}
+		log.Printf("[%v] %s\t%v", v.pc, opcode.String(), opr)
+		err := v.execute(opcode, operands)
+		if err != nil {
+			return err
+		}
+		if v.wayOut {
+			break
+		}
+	}
+	return nil
+}
+
 func (v *Vm) ExitCode() int {
 	f, err := v.getRegister(R10)
 	if err != nil {
@@ -165,6 +195,10 @@ func (v *Vm) ExitCode() int {
 
 func (v *Vm) Execute() error {
 	_ = v.scan()
+	err := v.dataSection()
+	if err != nil {
+		return err
+	}
 
 	entrypoint, ok := v.labels["main"]
 	if !ok {
@@ -305,7 +339,7 @@ func (v *Vm) add(operands []Fragment) error {
 			}
 		}
 	}
-	return fmt.Errorf("unsupported")
+	return fmt.Errorf("add unsupported")
 }
 
 func (v *Vm) sub(operands []Fragment) error {
@@ -474,9 +508,12 @@ func (v *Vm) mov(operands []Fragment) error {
 			//dstReg.Kind = LITERAL
 			value, ok := v.data[src.Variable.Name]
 			if !ok {
-				return fmt.Errorf("%s is not defined", src.Variable.Name)
+				return fmt.Errorf("vm: %s is not defined", src.Variable.Name)
 			}
 			v.registers[dst.Register.String()] = value
+			return nil
+		case LABEL:
+			v.registers[dst.Register.String()] = v.data[src.Label.Id]
 			return nil
 		}
 	case POINTER:
@@ -520,7 +557,40 @@ func (v *Vm) mov(operands []Fragment) error {
 					return nil
 				}
 			}
+		case REGISTER:
+			switch dst.Address.Original {
+			case BP:
+				v.stack[v.bp+dst.Address.Relative] = v.registers[src.Register.String()]
+				return nil
+			case SP:
+				v.stack[v.sp+dst.Address.Relative] = v.registers[src.Register.String()]
+				return nil
+			}
 		}
+	case LABEL:
+		// global
+		switch src.Kind {
+		case REGISTER:
+			srcReg, err := v.getRegister(*src.Register)
+			if err != nil {
+				return err
+			}
+			v.data[dst.Label.Id] = srcReg
+			return nil
+		case LITERAL:
+			v.data[dst.Label.Id] = src
+			//dstReg.Literal = src.Literal
+			return nil
+		case VARIABLE:
+			//dstReg.Kind = LITERAL
+			value, ok := v.data[src.Variable.Name]
+			if !ok {
+				return fmt.Errorf("vm: %s is not defined", src.Variable.Name)
+			}
+			v.data[dst.Label.Id] = value
+			return nil
+		}
+
 	}
 	return fmt.Errorf("unsupported")
 }
@@ -1057,7 +1127,7 @@ func (v *Vm) len(operands []Fragment) error {
 	}
 	variable, ok := v.data[name]
 	if !ok {
-		return fmt.Errorf("%s is not defined", name)
+		return fmt.Errorf("vm: %s is not defined", name)
 	}
 	dst.Kind = LITERAL
 	dst.Literal = NewInt(len([]byte(variable.Literal.S)))
