@@ -14,6 +14,7 @@ func TestNewNode(t *testing.T) {
 
 func TestParseWork(t *testing.T) {
 	code := `
+	var gA int = 1
 	func sayHelloS(name sting) string {
 		var hello string = "hello, "
 		return hello + name + "!"

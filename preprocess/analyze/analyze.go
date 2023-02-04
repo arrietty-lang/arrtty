@@ -544,10 +544,35 @@ func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 	return nil, fmt.Errorf("unknown data type")
 }
 
+func globalDecl(node *parse.Node) error {
+	knownValues["-global-"][0][node.VarDeclField.Identifier.IdentField.Ident] = dataTypes(node.VarDeclField.Type.DataTypeField.DataType)
+	return nil
+}
+func globalAssign(node *parse.Node) error {
+	if err := globalDecl(node.AssignField.To); err != nil {
+		return err
+	}
+	typ := knownValues["-global-"][0][node.AssignField.To.VarDeclField.Identifier.IdentField.Ident]
+
+	if node.AssignField.Value.Kind != parse.NdLiteral {
+		return fmt.Errorf("グローバル変数では即値以外を代入することはできません")
+	}
+	valType, err := expr(node.AssignField.Value, "-global-")
+	if err != nil {
+		return err
+	}
+
+	if !isSameType(typ, valType) {
+		return fmt.Errorf("global 型の異なる値を代入することはできません")
+	}
+
+	return nil
+}
+
 func Analyze(nodes []*parse.Node) (*Semantics, error) {
 	knownValues = map[string]map[int]map[string][]*parse.DataType{}
-	knownValues["global"] = map[int]map[string][]*parse.DataType{}
-	knownValues["global"][0] = map[string][]*parse.DataType{}
+	knownValues["-global-"] = map[int]map[string][]*parse.DataType{}
+	knownValues["-global-"][0] = map[string][]*parse.DataType{}
 	knownFunction = map[string]*FnDataType{}
 	outsideValues = []*parse.Node{}
 	outsideFunction = []*parse.Node{}
@@ -560,7 +585,13 @@ func Analyze(nodes []*parse.Node) (*Semantics, error) {
 				return nil, err
 			}
 		case parse.NdVarDecl:
-			// todo : global variable
+			if err := globalDecl(node); err != nil {
+				return nil, err
+			}
+		case parse.NdAssign:
+			if err := globalAssign(node); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return &Semantics{

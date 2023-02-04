@@ -10,6 +10,7 @@ import (
 
 func TestAnalyze_1(t *testing.T) {
 	code := `
+	var gA int = 1
 	func sayHelloS(name string) string {
 		var hello string = "hello, "
 		return hello + name + "!"
