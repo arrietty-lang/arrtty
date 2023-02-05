@@ -12,7 +12,7 @@ var semOverall *analyze.Semantics
 var currentNest int
 var currentFnVariableBPs map[int]map[string]int
 
-// var globals []string
+var globals []string
 var dataSection []vm.Fragment
 
 func searchBPDistFromVarName(variables map[int]map[string]int, nest int, varName string) int {
@@ -156,24 +156,54 @@ func stmt(node *parse.Node) ([]vm.Fragment, error) {
 		if err != nil {
 			return nil, err
 		}
-		loc := searchBPDistFromVarName(currentFnVariableBPs, currentNest, node.AssignField.To.VarDeclField.Identifier.IdentField.Ident)
-		if loc == -1 {
-			return nil, fmt.Errorf("変数の位置を特定できませんでした: %v", node.AssignField.To.IdentField.Ident)
+		var loc int
+		var ident string
+		switch node.AssignField.To.Kind {
+		case parse.NdVarDecl:
+			ident = node.AssignField.To.VarDeclField.Identifier.IdentField.Ident
+			loc = searchBPDistFromVarName(currentFnVariableBPs, currentNest, ident)
+		case parse.NdIdent:
+			ident = node.AssignField.To.IdentField.Ident
+			loc = searchBPDistFromVarName(currentFnVariableBPs, currentNest, ident)
 		}
+		// 変数の中身をスタックにプッシュ
 		program = append(program, val...)
-		program = append(program, []vm.Fragment{
-			// valの結果を取り出す
-			vm.NewOpcodeFragment(vm.POP),
-			vm.NewRegisterFragment(vm.R1),
+		// 関数内の変数
+		if loc != -1 {
+			program = append(program, []vm.Fragment{
+				// valの結果を取り出す
+				vm.NewOpcodeFragment(vm.POP),
+				vm.NewRegisterFragment(vm.R1),
 
-			// 変数の場所に格納
-			vm.NewOpcodeFragment(vm.MOV),
-			vm.NewRegisterFragment(vm.R1),
-			vm.NewAddressFragment(vm.NewAddress(vm.BP, -loc)),
-		}...)
-		return program, nil
+				// 変数の場所に格納
+				vm.NewOpcodeFragment(vm.MOV),
+				vm.NewRegisterFragment(vm.R1),
+				vm.NewAddressFragment(vm.NewAddress(vm.BP, -loc)),
+			}...)
+			return program, nil
+		}
+
+		// グローバル変数ならば
+		for _, g := range globals {
+			if g == ident {
+				program = append(program, []vm.Fragment{
+					// valの結果を取り出す
+					vm.NewOpcodeFragment(vm.POP),
+					vm.NewRegisterFragment(vm.R1),
+
+					// 変数の場所に格納
+					vm.NewOpcodeFragment(vm.MOV),
+					vm.NewRegisterFragment(vm.R1),
+					vm.NewLabelFragment(ident),
+				}...)
+				return program, nil
+			}
+		}
+
+		return nil, fmt.Errorf("変数の位置を特定できませんでした: %v", ident)
 	case parse.NdVarDecl:
-
+		// アナライズされて関数のはじめにspまとめて引かれているので特にすることはないはず
+		return nil, nil
 	}
 	return nil, fmt.Errorf("unsupport node kind")
 }
@@ -341,7 +371,20 @@ func literal(node *parse.Node) ([]vm.Fragment, error) {
 	case parse.NdIdent:
 		loc := searchBPDistFromVarName(currentFnVariableBPs, currentNest, node.IdentField.Ident)
 		if loc == -1 {
-			//if
+			for _, g := range globals {
+				if node.IdentField.Ident == g {
+					// global変数として存在する
+					return []vm.Fragment{
+						// グローバル変数を取り出す
+						vm.NewOpcodeFragment(vm.MOV),
+						vm.NewLabelFragment(node.IdentField.Ident),
+						vm.NewRegisterFragment(vm.R1),
+						// PUSH
+						vm.NewOpcodeFragment(vm.PUSH),
+						vm.NewRegisterFragment(vm.R1),
+					}, nil
+				}
+			}
 			return nil, fmt.Errorf("変数が定義されていません: %s", node.IdentField.Ident)
 		}
 		return []vm.Fragment{
@@ -368,7 +411,14 @@ func Compile(sem *analyze.Semantics) ([]vm.Fragment, error) {
 			}
 			program = append(program, frags...)
 		case parse.NdAssign:
+			globals = append(globals, n.AssignField.To.VarDeclField.Identifier.IdentField.Ident)
+			dataSection = append(dataSection, []vm.Fragment{
+				vm.NewOpcodeFragment(vm.MOV),
+				vm.NewLiteralFragment(vm.FromLiteralField(n.AssignField.Value.LiteralField)),
+				vm.NewLabelFragment(n.AssignField.To.VarDeclField.Identifier.IdentField.Ident),
+			}...)
 		case parse.NdVarDecl:
+			globals = append(globals, n.VarDeclField.Identifier.IdentField.Ident)
 		}
 	}
 

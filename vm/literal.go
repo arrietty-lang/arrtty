@@ -1,6 +1,10 @@
 package vm
 
-import "strconv"
+import (
+	"github.com/arrietty-lang/arrtty/preprocess/parse"
+	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
+	"strconv"
+)
 
 type LiteralType int
 
@@ -27,6 +31,20 @@ func (l *Literal) String() string {
 		return l.S
 	}
 	return ""
+}
+
+func FromLiteralField(field *parse.LiteralField) *Literal {
+	switch field.Kind {
+	case tokenize.LInt:
+		return NewInt(field.I)
+	case tokenize.LFloat:
+		return NewFloat(field.F)
+	case tokenize.LString:
+		return NewString(field.S)
+	case tokenize.LBool:
+		//return new
+	}
+	return nil
 }
 
 func NewInt(i int) *Literal {

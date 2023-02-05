@@ -241,13 +241,22 @@ func TestCompile_CALL(t *testing.T) {
 		{
 			"g",
 			`
+				var a int = 1
+				var x int
+				func add(x int, y int) int {
+					return x + y
+				}
 				func main() int {
-					var a int = 1
 					var b int  = a + 1
-					return b
+					var c int = add(2, b)
+					a = c * 2
+					var d int
+					d = a
+					x = 22
+					return d * x
 				}
 				`,
-			2,
+			176,
 		},
 	}
 
