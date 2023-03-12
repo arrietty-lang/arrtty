@@ -43,6 +43,10 @@ func FromLiteralField(field *parse.LiteralField) *Literal {
 		return NewString(field.S)
 	case tokenize.LBool:
 		//return new
+		if field.B {
+			return NewInt(1)
+		}
+		return NewInt(0)
 	}
 	return nil
 }

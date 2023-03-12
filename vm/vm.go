@@ -606,14 +606,8 @@ func (v *Vm) cmp(operands []Fragment) error {
 	case REGISTER:
 		switch x2.Kind {
 		case REGISTER:
-			x1r, err := v.getRegister(*x1.Register)
-			if err != nil {
-				return err
-			}
-			x2r, err := v.getRegister(*x2.Register)
-			if err != nil {
-				return err
-			}
+			x1r := v.registers[x1.Register.String()]
+			x2r := v.registers[x2.Register.String()]
 			if isSameLiteral(x1r, x2r) {
 				v.zf = 1
 			} else {
@@ -621,10 +615,7 @@ func (v *Vm) cmp(operands []Fragment) error {
 			}
 			return nil
 		case LITERAL:
-			x1r, err := v.getRegister(*x1.Register)
-			if err != nil {
-				return err
-			}
+			x1r := v.registers[x1.Register.String()]
 			if isSameLiteral(x1r, x2) {
 				v.zf = 1
 			} else {
@@ -635,10 +626,7 @@ func (v *Vm) cmp(operands []Fragment) error {
 	case LITERAL:
 		switch x2.Kind {
 		case REGISTER:
-			x2r, err := v.getRegister(*x2.Register)
-			if err != nil {
-				return err
-			}
+			x2r := v.registers[x2.Register.String()]
 			if isSameLiteral(x1, x2r) {
 				v.zf = 1
 			} else {
@@ -904,7 +892,7 @@ func (v *Vm) jmp(operands []Fragment) error {
 	}
 
 	if x.Kind != LITERAL || x.Literal.Type != Int {
-		return fmt.Errorf("unexpected")
+		return fmt.Errorf("unexpected jump target")
 	}
 	v.pc = x.Literal.I
 	return nil

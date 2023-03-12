@@ -179,7 +179,7 @@ func toplevel() (*Node, error) {
 		return NewAssignNode(c.Pos, NewVarDeclNode(c.Pos, NewIdentNode(id.Pos, id.Literal.S), typ), value), nil
 	}
 
-	return nil, fmt.Errorf("unexpected")
+	return nil, fmt.Errorf("PARSE: unexpected toplevel")
 }
 
 //func block() (*Node, error) {

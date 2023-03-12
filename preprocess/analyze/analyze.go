@@ -518,6 +518,15 @@ func literal(node *parse.Node, functionName string) ([]*parse.DataType, error) {
 			}
 			return nil, fmt.Errorf("function %s is not defined", node.CallField.Identifier.IdentField.Ident) // ?
 		}
+
+		// 関数呼び出しで引数を渡さなかった場合、NILポインタが発生するのでチェックしてあげる
+		if node.CallField.Args == nil {
+			if !isSameType(typ.Params, nil) {
+				return nil, fmt.Errorf("関数呼び出しの引数と与えられた型が異なります")
+			}
+			return typ.Returns, nil
+		}
+
 		//node.CallField.Args
 		var args []*parse.DataType
 		for _, arg := range node.CallField.Args.PolynomialField.Values {

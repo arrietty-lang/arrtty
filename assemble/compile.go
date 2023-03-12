@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"github.com/arrietty-lang/arrtty/preprocess/analyze"
 	"github.com/arrietty-lang/arrtty/preprocess/parse"
-	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
 	"github.com/arrietty-lang/arrtty/vm"
+	"math/rand"
+	"time"
 )
+
+var currentFunctionName string
 
 var semOverall *analyze.Semantics
 var currentNest int
@@ -14,6 +17,20 @@ var currentFnVariableBPs map[int]map[string]int
 
 var globals []string
 var dataSection []vm.Fragment
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
 
 func searchBPDistFromVarName(variables map[int]map[string]int, nest int, varName string) int {
 	for name, distance := range variables[nest] {
@@ -26,6 +43,7 @@ func searchBPDistFromVarName(variables map[int]map[string]int, nest int, varName
 
 func defFunction(node *parse.Node) ([]vm.Fragment, error) {
 	defFn := node.FuncDefField
+	currentFunctionName = defFn.Identifier.IdentField.Ident
 	// bpをプッシュする前に戻り値の分だけぷっしゅしておく？
 	// 関数として呼び出された場合に必要な命令を始めに入れとく
 
@@ -97,20 +115,20 @@ func defFunction(node *parse.Node) ([]vm.Fragment, error) {
 	//	}...)
 	//}
 
-	// 現状復帰に必要な命令を最後に入れてあげる
-	if defFn.Identifier.IdentField.Ident != "main" {
-		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.MOV),
-			vm.NewPointerFragment(vm.BP),
-			vm.NewPointerFragment(vm.SP),
-
-			vm.NewOpcodeFragment(vm.POP),
-			vm.NewPointerFragment(vm.BP),
-		}...)
-		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.RET),
-		}...)
-	}
+	//// 現状復帰に必要な命令を最後に入れてあげる
+	//if defFn.Identifier.IdentField.Ident != "main" {
+	//	program = append(program, []vm.Fragment{
+	//		vm.NewOpcodeFragment(vm.MOV),
+	//		vm.NewPointerFragment(vm.BP),
+	//		vm.NewPointerFragment(vm.SP),
+	//
+	//		vm.NewOpcodeFragment(vm.POP),
+	//		vm.NewPointerFragment(vm.BP),
+	//	}...)
+	//	program = append(program, []vm.Fragment{
+	//		vm.NewOpcodeFragment(vm.RET),
+	//	}...)
+	//}
 
 	return program, nil
 }
@@ -122,6 +140,7 @@ func stmt(node *parse.Node) ([]vm.Fragment, error) {
 		if len(node.PolynomialField.Values) > 2 {
 			return nil, fmt.Errorf("２つ以上の戻り値は現在サポートされていません")
 		}
+		// 戻り値の準備
 		returnRegs := []vm.Register{vm.R10, vm.R11}
 		for i, rn := range node.PolynomialField.Values {
 			rv, err := expr(rn)
@@ -138,20 +157,23 @@ func stmt(node *parse.Node) ([]vm.Fragment, error) {
 				vm.NewRegisterFragment(vm.R1),
 				vm.NewRegisterFragment(returnRegs[i])}...)
 		}
+		// リターン本文
+		// メインだけはリターンで何も返さない..?
+		if currentFunctionName != "main" {
+			program = append(program, []vm.Fragment{
+				vm.NewOpcodeFragment(vm.MOV),
+				vm.NewPointerFragment(vm.BP),
+				vm.NewPointerFragment(vm.SP),
+
+				vm.NewOpcodeFragment(vm.POP),
+				vm.NewPointerFragment(vm.BP),
+			}...)
+			program = append(program, []vm.Fragment{
+				vm.NewOpcodeFragment(vm.RET),
+			}...)
+		}
 		return program, nil
 	case parse.NdAssign:
-		//lit, err := literal(node.AssignField.Value)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//dataSection = append(dataSection, []vm.Fragment{
-		//	vm.NewOpcodeFragment(vm.MOV),
-		//}...)
-		//dataSection = append(dataSection, lit...)
-		//dataSection = append(dataSection, []vm.Fragment{
-		//	vm.NewLabelFragment(node.AssignField.To.IdentField.Ident),
-		//}...)
-
 		val, err := expr(node.AssignField.Value)
 		if err != nil {
 			return nil, err
@@ -204,8 +226,74 @@ func stmt(node *parse.Node) ([]vm.Fragment, error) {
 	case parse.NdVarDecl:
 		// アナライズされて関数のはじめにspまとめて引かれているので特にすることはないはず
 		return nil, nil
+	case parse.NdIfElse:
+		// 条件を計算
+		cond, err := expr(node.IfElseField.Cond)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, cond...)
+		// 結果を取り出す
+		program = append(program, []vm.Fragment{
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R1),
+		}...)
+
+		// これなに
+		////// 結果が同じであるかどうか、同じならZF=1になる
+		//program = append(program, []vm.Fragment{
+		//	vm.NewOpcodeFragment(vm.CMP),
+		//	vm.NewRegisterFragment(vm.R1),
+		//	vm.NewLiteralFragment(vm.NewInt(1)),
+		//}...)
+
+		// 各ジャンプ先のラベルを用意
+		ifBlockLabel := "if_if_block_" + RandStringRunes(20)
+		endLabel := "if_end_" + RandStringRunes(20)
+
+		// 条件に合致したらIFブロックへ飛ぶ
+		program = append(program, []vm.Fragment{
+			vm.NewOpcodeFragment(vm.JZ),
+			vm.NewLabelFragment(ifBlockLabel),
+		}...)
+
+		// エルスを使用していればエルスのブロックを展開
+		if node.IfElseField.UseElse {
+			elseBlock, err := stmt(node.IfElseField.ElseBlock)
+			if err != nil {
+				return nil, err
+			}
+			program = append(program, elseBlock...)
+		}
+		// エンドラベルに飛ぶ命令を挿入(条件に合致しなかった場合、IFを読み飛ばすため)
+		program = append(program, []vm.Fragment{
+			vm.NewOpcodeFragment(vm.JMP),
+			vm.NewLabelFragment(endLabel),
+		}...)
+
+		// if-block
+		program = append(program, vm.NewDefLabelFragment(ifBlockLabel))
+		ifBlock, err := stmt(node.IfElseField.IfBlock)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, ifBlock...)
+
+		// 最終的なジャンプ先
+		program = append(program, vm.NewDefLabelFragment(endLabel))
+		return program, nil
+	case parse.NdBlock:
+		for _, n := range node.BlockField.Statements {
+			f, err := stmt(n)
+			if err != nil {
+				return nil, err
+			}
+			program = append(program, f...)
+		}
+		return program, nil
 	}
-	return nil, fmt.Errorf("unsupport node kind")
+	return expr(node)
+	//return nil, fmt.Errorf("unsupport node kind")
 }
 
 func expr(node *parse.Node) ([]vm.Fragment, error) {
@@ -221,6 +309,100 @@ func equality(node *parse.Node) ([]vm.Fragment, error) {
 }
 
 func relation(node *parse.Node) ([]vm.Fragment, error) {
+	var program []vm.Fragment
+	switch node.Kind {
+	case parse.NdLt:
+		lhs, err := relation(node.BinaryField.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := relation(node.BinaryField.Rhs)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, lhs...)
+		program = append(program, rhs...)
+
+		program = append(program, []vm.Fragment{
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R2),
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(vm.LT),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewRegisterFragment(vm.R2),
+		}...)
+
+		return program, nil
+	case parse.NdLe:
+		lhs, err := relation(node.BinaryField.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := relation(node.BinaryField.Rhs)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, lhs...)
+		program = append(program, rhs...)
+
+		program = append(program, []vm.Fragment{
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R2),
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(vm.LE),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewRegisterFragment(vm.R2),
+		}...)
+
+		return program, nil
+	case parse.NdGt:
+		lhs, err := relation(node.BinaryField.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := relation(node.BinaryField.Rhs)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, lhs...)
+		program = append(program, rhs...)
+
+		program = append(program, []vm.Fragment{
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R2),
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(vm.GT),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewRegisterFragment(vm.R2),
+		}...)
+		return program, nil
+	case parse.NdGe:
+		lhs, err := relation(node.BinaryField.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := relation(node.BinaryField.Rhs)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, lhs...)
+		program = append(program, rhs...)
+
+		program = append(program, []vm.Fragment{
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R2),
+			vm.NewOpcodeFragment(vm.POP),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(vm.GE),
+			vm.NewRegisterFragment(vm.R1),
+			vm.NewRegisterFragment(vm.R2),
+		}...)
+
+		return program, nil
+	}
 	return add(node)
 }
 
@@ -323,37 +505,39 @@ func access(node *parse.Node) ([]vm.Fragment, error) {
 func literal(node *parse.Node) ([]vm.Fragment, error) {
 	switch node.Kind {
 	case parse.NdLiteral:
-		switch node.LiteralField.Kind {
-		case tokenize.LInt:
-			return []vm.Fragment{
-				vm.NewOpcodeFragment(vm.PUSH),
-				vm.NewLiteralFragment(vm.NewInt(node.LiteralField.I)),
-			}, nil
-		}
+		return []vm.Fragment{
+			vm.NewOpcodeFragment(vm.PUSH),
+			vm.NewLiteralFragment(vm.FromLiteralField(node.LiteralField)),
+		}, nil
 	case parse.NdParenthesis:
 		return expr(node.UnaryField.Value)
 	case parse.NdCall:
 		var program []vm.Fragment
-		args := node.CallField.Args.PolynomialField.Values
-		for i, j := 0, len(args)-1; i < j; i, j = i+1, j-1 {
-			args[i], args[j] = args[j], args[i]
-		}
-		for _, arg := range args {
-			// 計算結果はプッシュされるので、逆順に実行してあげるだけで良い..?
-			p, err := expr(arg)
-			if err != nil {
-				return nil, err
+		// 引数があるかチェック
+		if node.CallField.Args != nil {
+			args := node.CallField.Args.PolynomialField.Values
+			for i, j := 0, len(args)-1; i < j; i, j = i+1, j-1 {
+				args[i], args[j] = args[j], args[i]
 			}
-			program = append(program, p...)
+			for _, arg := range args {
+				// 計算結果はプッシュされるので、逆順に実行してあげるだけで良い..?
+				p, err := expr(arg)
+				if err != nil {
+					return nil, err
+				}
+				program = append(program, p...)
+			}
+			program = append(program, []vm.Fragment{
+				vm.NewOpcodeFragment(vm.CALL),
+				vm.NewLabelFragment(node.CallField.Identifier.IdentField.Ident),
+			}...)
+			// 引数分spを加算
+			program = append(program, []vm.Fragment{
+				vm.NewOpcodeFragment(vm.ADD), vm.NewLiteralFragment(vm.NewInt(len(args))), vm.NewPointerFragment(vm.SP),
+			}...)
 		}
-		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.CALL),
-			vm.NewLabelFragment(node.CallField.Identifier.IdentField.Ident),
-		}...)
-		// 引数分spを加算
-		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.ADD), vm.NewLiteralFragment(vm.NewInt(len(args))), vm.NewPointerFragment(vm.SP),
-		}...)
+
+		// 戻り地に関する記述..?
 		switch len(semOverall.KnownFunctions[node.CallField.Identifier.IdentField.Ident].Returns) {
 		case 1:
 			program = append(program, []vm.Fragment{

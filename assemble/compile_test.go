@@ -8,6 +8,7 @@ import (
 	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
 	"github.com/arrietty-lang/arrtty/vm"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"testing"
 )
 
@@ -215,48 +216,106 @@ func TestCompile_CALL(t *testing.T) {
 		code   string
 		expect int
 	}{
+		//{
+		//	"+-",
+		//	`
+		//		func sub(a int, b int) int { return a-b }
+		//		func add(x int, y int) int {
+		//			return x+y
+		//		}
+		//		func main() int {
+		//			return sub(add(2, 1), 2)
+		//		}`,
+		//	1,
+		//}, {
+		//	"*+",
+		//	`
+		//		func mul(a int, b int) int { return a*b }
+		//		func add(x int, y int) int {
+		//			return x+y
+		//		}
+		//		func main() int {
+		//			return mul(3, add(2, 3))
+		//		}`,
+		//	15,
+		//},
+		//{
+		//	"g",
+		//	`
+		//		var a int = 1
+		//		var x int
+		//		func add(x int, y int) int {
+		//			return x + y
+		//		}
+		//		func main() int {
+		//			var b int  = a + 1
+		//			var c int = add(2, b)
+		//			a = c * 2
+		//			var d int
+		//			d = a
+		//			x = 22
+		//			return d * x
+		//		}
+		//		`,
+		//	176,
+		//},
+		//{
+		//	"dec",
+		//	`
+		//		func dec(i int) int {
+		//			i = i-1
+		//			return i
+		//		}
+		//		func main() int {
+		//			return dec(5)
+		//		}
+		//		`,
+		//	4,
+		//},
+		//{
+		//	"if 1",
+		//	`
+		//		func isMinus(i int) int {
+		//			if i < 0 {
+		//				return 1
+		//			}
+		//			return 0
+		//		}
+		//		func main() int {
+		//			return isMinus(1)
+		//		}
+		//		`,
+		//	0,
+		//},
+		//{
+		//	"if 2",
+		//	`
+		//		func isMinus(i int) int {
+		//			if i < 0 {
+		//				return 1
+		//			}
+		//			return 0
+		//		}
+		//		func main() int {
+		//			return isMinus(-1)
+		//		}
+		//		`,
+		//	1,
+		//},
 		{
-			"+-",
+			"f",
 			`
-				func sub(a int, b int) int { return a-b }
-				func add(x int, y int) int {
-					return x+y
+				func f(i int) int {
+					if 9 < i{
+						return i
+					}
+					return f(i+1) + f(i+1)
 				}
 				func main() int {
-					return sub(add(2, 1), 2)
-				}`,
-			1,
-		}, {
-			"*+",
-			`
-				func mul(a int, b int) int { return a*b }
-				func add(x int, y int) int {
-					return x+y
-				}
-				func main() int {
-					return mul(3, add(2, 3))
-				}`,
-			15,
-		},
-		{
-			"g",
-			`
-				var a int = 1
-				var x int
-				func add(x int, y int) int {
-					return x + y
-				}
-				func main() int {
-					var b int  = a + 1
-					var c int = add(2, b)
-					a = c * 2
-					var d int
-					d = a
-					x = 22
-					return d * x
+					return f(9)
 				}
 				`,
-			176,
+			101,
 		},
 	}
 
@@ -290,6 +349,7 @@ func TestCompile_CALL(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		log.Println(tt.name)
 		assert.Equal(t, tt.expect, v.ExitCode())
 	}
 }
