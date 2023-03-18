@@ -80,17 +80,31 @@ func NewVm(program []Fragment) *Vm {
 	}
 }
 
+func (v *Vm) detailOfStack(sp int) string {
+	typ := v.stack[sp].Type
+	var val string
+	switch typ {
+	case Int:
+		val = fmt.Sprintf("%v", v.stack[sp].I)
+	case Float:
+		val = fmt.Sprintf("%v", v.stack[sp].F)
+	case String:
+		val = fmt.Sprintf("%v", v.stack[sp].S)
+	}
+	return fmt.Sprintf("SP:%v = %v:%v", sp, typ.String(), val)
+}
+
 func (v *Vm) pushStack(f Fragment) error {
 	v.sp--
 	v.stack[v.sp] = f
-	log.Printf("PUSH(INTO %v) %v", v.sp, f.String())
+	//log.Printf("[STACK::PUSH] TO:SP=%v VAL:%v=%v", v.sp, f.Type.String(), f.String())
 	return nil
 }
 
 func (v *Vm) popStack() Fragment {
 	f := v.stack[v.sp]
 	v.sp++
-	log.Printf("POP(FROM %v) %v", v.sp-1, f.String())
+	//log.Printf("[STACK::POP] FROM:SP=%v VAL:%v=%v", v.sp-1, f.Type.String(), f.String())
 	return f
 }
 
@@ -314,7 +328,11 @@ func (v *Vm) add(operands []Fragment) error {
 				return nil
 			}
 			if dstReg.Literal.Type == srcReg.Literal.Type && dstReg.Literal.Type == Int {
-				dstReg.Literal.I += srcReg.Literal.I
+				fmt.Printf("v.bp-1 = %v\n", v.stack[v.bp-1])
+				fmt.Printf("%v += %v\n", dst.Register.String(), src.Register.String())
+				fmt.Printf("%v += %v\n", dstReg.Literal.I, srcReg.Literal.I)
+				dstReg.Literal.I = dstReg.Literal.I + srcReg.Literal.I
+				fmt.Printf("v.bp-1 = %v\n", v.stack[v.bp-1])
 				return nil
 			}
 			if dstReg.Literal.Type == srcReg.Literal.Type && dstReg.Literal.Type == Float {
@@ -938,6 +956,7 @@ func (v *Vm) push(operands []Fragment) error {
 		//	return err
 		//}
 		//v.stack[v.sp] = sourceValue
+		log.Printf("[PUSH::REGISTER] %v:%v", source.Register.String(), sourceValue.String())
 		_ = v.pushStack(sourceValue)
 		return nil
 	case POINTER:
@@ -967,6 +986,7 @@ func (v *Vm) push(operands []Fragment) error {
 			//	return err
 			//}
 			//v.stack[v.sp] = sourceValue
+			log.Printf("[PUSH::ADDRESS] %v+(%v):%v", "bp", source.Address.Relative, sourceValue.String())
 			_ = v.pushStack(sourceValue)
 			return nil
 		case SP:
@@ -975,6 +995,7 @@ func (v *Vm) push(operands []Fragment) error {
 			//	return err
 			//}
 			//v.stack[v.sp] = sourceValue
+			log.Printf("[PUSH::ADDRESS] %v+(%v):%v", "sp", source.Address.Relative, sourceValue.String())
 			_ = v.pushStack(sourceValue)
 			return nil
 		}
@@ -1002,7 +1023,8 @@ func (v *Vm) pop(operands []Fragment) error {
 		//}
 		//*dstReg = *v.stack[v.sp]
 		r := v.popStack()
-		v.registers[dst.Register.String()] = r
+		v.registers[dst.Register.String()] = r.Clone()
+		log.Printf("[POP] %v:%v", dst.Register.String(), r.String())
 		return nil
 	case POINTER:
 		switch *dst.Pointer {
