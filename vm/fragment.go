@@ -24,6 +24,19 @@ type Fragment struct {
 	*Label
 }
 
+func (f Fragment) Clone() Fragment {
+	return Fragment{
+		Kind:     f.Kind,
+		Opcode:   f.Opcode,
+		Literal:  f.Literal.Clone(),
+		Address:  f.Address,
+		Register: f.Register,
+		Pointer:  f.Pointer,
+		Variable: f.Variable,
+		Label:    f.Label,
+	}
+}
+
 func (f Fragment) String() string {
 	switch f.Kind {
 	case OPCODE:
