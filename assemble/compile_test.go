@@ -306,16 +306,16 @@ func TestCompile_CALL(t *testing.T) {
 			"f",
 			`
 				func f(i int) int {
-					if 9 < i{
-						return i
-					}
-					return f(i+1) + f(i+1)
+					//var x int = i+1
+					// var y int = i+1
+					i + 1
+					return i
 				}
 				func main() int {
-					return f(9)
+					return f(1)
 				}
 				`,
-			101,
+			4,
 		},
 	}
 

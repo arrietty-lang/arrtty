@@ -13,6 +13,28 @@ const (
 	LABEL
 )
 
+func (fk FragmentKind) String() string {
+	switch fk {
+	case ILLEGAL:
+		return "illegal"
+	case OPCODE:
+		return "opcode"
+	case LITERAL:
+		return "literal"
+	case ADDRESS:
+		return "address"
+	case REGISTER:
+		return "register"
+	case POINTER:
+		return "pointer"
+	case VARIABLE:
+		return "variable"
+	case LABEL:
+		return "label"
+	}
+	return "illegal"
+}
+
 type Fragment struct {
 	Kind FragmentKind
 	*Opcode

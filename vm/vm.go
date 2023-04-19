@@ -51,7 +51,7 @@ func (v *Vm) Export() string {
 }
 
 func NewVm(program []Fragment) *Vm {
-	stack := make([]Fragment, 100)
+	stack := make([]Fragment, 10)
 	return &Vm{
 		wayOut:  false,
 		pc:      0,
@@ -83,14 +83,14 @@ func NewVm(program []Fragment) *Vm {
 func (v *Vm) pushStack(f Fragment) error {
 	v.sp--
 	v.stack[v.sp] = f
-	log.Printf("PUSH(INTO %v) %v", v.sp, f.String())
+	//log.Printf("\tPUSH(INTO %v) %v", v.sp, f.String())
 	return nil
 }
 
 func (v *Vm) popStack() Fragment {
 	f := v.stack[v.sp]
 	v.sp++
-	log.Printf("POP(FROM %v) %v", v.sp-1, f.String())
+	//log.Printf("\tPOP(FROM %v) %v", v.sp-1, f.String())
 	return f
 }
 
@@ -218,7 +218,16 @@ func (v *Vm) Execute() error {
 		for _, o := range operands {
 			opr += o.String() + ", "
 		}
-		log.Printf("[%v] %s\t%v", v.pc, opcode.String(), opr)
+		fmt.Printf("current SP: %d\n", v.sp)
+		fmt.Println("--register--")
+		fmt.Printf("(R1): %s=%s, (R2): %s=%s\n", v.registers["R1"].Kind.String(), v.registers["R1"].String(), v.registers["R2"].Kind.String(), v.registers["R2"].String())
+		fmt.Println("--stack--")
+		for i := 0; i < 10; i++ {
+			sp := 9 - i
+			fmt.Printf("(%d): %s=%s, ", sp, v.stack[sp].Kind.String(), v.stack[sp].String())
+		}
+		fmt.Println()
+		fmt.Printf("[PC=%v] %s\t%v\n\n", v.pc, opcode.String(), opr)
 		err := v.execute(opcode, operands)
 		if err != nil {
 			return err
@@ -231,6 +240,8 @@ func (v *Vm) Execute() error {
 }
 
 func (v *Vm) execute(opcode Fragment, operands []Fragment) error {
+
+	//for
 	switch *opcode.Opcode {
 	case NOP:
 		return v.nop(operands)
@@ -314,7 +325,7 @@ func (v *Vm) add(operands []Fragment) error {
 				return nil
 			}
 			if dstReg.Literal.Type == srcReg.Literal.Type && dstReg.Literal.Type == Int {
-				dstReg.Literal.I += srcReg.Literal.I
+				dstReg.Literal.I = dstReg.Literal.I + srcReg.Literal.I
 				return nil
 			}
 			if dstReg.Literal.Type == srcReg.Literal.Type && dstReg.Literal.Type == Float {
