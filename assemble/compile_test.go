@@ -306,6 +306,9 @@ func TestCompile_CALL(t *testing.T) {
 			"f",
 			`
 				func f(i int) int {
+					var x int = i + 1
+					var y int = i + 1
+					return x + y
 					//var x int = i+1
 					// var y int = i+1
 					i + 1

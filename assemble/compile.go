@@ -431,17 +431,17 @@ func add(node *parse.Node) ([]vm.Fragment, error) {
 		program = append(program, rhs...)
 		// 結果をスタックから取り出す
 		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R2), // 右辺
-			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R1), // 左辺
+			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R5), // 右辺
+			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R4), // 左辺
 		}...)
 		// 足し算/引き算
 		program = append(program, []vm.Fragment{
 			// r1 += r2
-			vm.NewOpcodeFragment(op), vm.NewRegisterFragment(vm.R2), vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(op), vm.NewRegisterFragment(vm.R5), vm.NewRegisterFragment(vm.R4),
 		}...)
 		// 結果R1をスタックにプッシュ
 		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.PUSH), vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(vm.PUSH), vm.NewRegisterFragment(vm.R4),
 		}...)
 		return program, nil
 	}
@@ -472,17 +472,17 @@ func mul(node *parse.Node) ([]vm.Fragment, error) {
 		program = append(program, rhs...)
 		// 結果をスタックから取り出す
 		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R2), // 右辺
-			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R1), // 左辺
+			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R5), // 右辺
+			vm.NewOpcodeFragment(vm.POP), vm.NewRegisterFragment(vm.R4), // 左辺
 		}...)
 		// 掛け算割り算
 		program = append(program, []vm.Fragment{
 			// r1 += r2
-			vm.NewOpcodeFragment(op), vm.NewRegisterFragment(vm.R2), vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(op), vm.NewRegisterFragment(vm.R5), vm.NewRegisterFragment(vm.R4),
 		}...)
 		// 結果R1をスタックにプッシュ
 		program = append(program, []vm.Fragment{
-			vm.NewOpcodeFragment(vm.PUSH), vm.NewRegisterFragment(vm.R1),
+			vm.NewOpcodeFragment(vm.PUSH), vm.NewRegisterFragment(vm.R4),
 		}...)
 		return program, nil
 

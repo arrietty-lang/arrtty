@@ -14,11 +14,30 @@ const (
 	String
 )
 
+func (lt LiteralType) String() string {
+	switch lt {
+	case Float:
+		return "Float"
+	case String:
+		return "String"
+	}
+	return "Int"
+}
+
 type Literal struct {
 	Type LiteralType
 	I    int
 	F    float64
 	S    string
+}
+
+func (l *Literal) Clone() *Literal {
+	return &Literal{
+		Type: l.Type,
+		I:    l.I,
+		F:    l.F,
+		S:    l.S,
+	}
 }
 
 func (l *Literal) String() string {
