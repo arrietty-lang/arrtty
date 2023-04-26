@@ -524,3 +524,93 @@ func TestVm_CallRet(t *testing.T) {
 	}
 	assert.Equal(t, 0, nonNilStacks)
 }
+
+func TestVm_Execute_If_True(t *testing.T) {
+	stackSize := 10
+
+	program := []Data{
+		*NewLabelData(*NewLabel(true, "f")),
+		*NewOpcodeData(CMP), *NewRegisterTagData(R1), *NewRegisterTagData(R2),
+		*NewOpcodeData(JZ), *NewLabelData(*NewLabel(false, "if_true")),
+		// if_false
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(100),
+		*NewOpcodeData(POP), *NewRegisterTagData(R3),
+		*NewOpcodeData(JMP), *NewLabelData(*NewLabel(false, "if_end")),
+		// if_true
+		*NewLabelData(*NewLabel(true, "if_true")),
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(7),
+		*NewOpcodeData(POP), *NewRegisterTagData(R3),
+		// end
+		*NewLabelData(*NewLabel(true, "if_end")),
+		*NewOpcodeData(RET),
+
+		*NewLabelData(*NewLabel(true, "main")),
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // stack[8] <- 3
+		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // stack[8] <- 3
+		*NewOpcodeData(POP), *NewRegisterTagData(R2), // stack[8] -> R2
+		*NewOpcodeData(CALL), *NewLabelData(*NewLabel(false, "f")),
+		*NewOpcodeData(EXIT),
+	}
+
+	virtualMachine := NewVm(program, stackSize)
+	err := virtualMachine.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, NewLiteralDataWithRaw(7), virtualMachine.registers[R3])
+
+	nonNilStacks := 0
+	for i := 0; i < stackSize; i++ {
+		if virtualMachine.stack[i] != nil {
+			nonNilStacks++
+		}
+	}
+	assert.Equal(t, 0, nonNilStacks)
+}
+
+func TestVm_Execute_If_False(t *testing.T) {
+	stackSize := 10
+
+	program := []Data{
+		*NewLabelData(*NewLabel(true, "f")),
+		*NewOpcodeData(CMP), *NewRegisterTagData(R1), *NewRegisterTagData(R2),
+		*NewOpcodeData(JZ), *NewLabelData(*NewLabel(false, "if_true")),
+		// if_false
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(100),
+		*NewOpcodeData(POP), *NewRegisterTagData(R3),
+		*NewOpcodeData(JMP), *NewLabelData(*NewLabel(false, "if_end")),
+		// if_true
+		*NewLabelData(*NewLabel(true, "if_true")),
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(7),
+		*NewOpcodeData(POP), *NewRegisterTagData(R3),
+		// end
+		*NewLabelData(*NewLabel(true, "if_end")),
+		*NewOpcodeData(RET),
+
+		*NewLabelData(*NewLabel(true, "main")),
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(4), // stack[8] <- 4
+		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // stack[8] <- 3
+		*NewOpcodeData(POP), *NewRegisterTagData(R2), // stack[8] -> R2
+		*NewOpcodeData(CALL), *NewLabelData(*NewLabel(false, "f")),
+		*NewOpcodeData(EXIT),
+	}
+
+	virtualMachine := NewVm(program, stackSize)
+	err := virtualMachine.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, NewLiteralDataWithRaw(100), virtualMachine.registers[R3])
+
+	nonNilStacks := 0
+	for i := 0; i < stackSize; i++ {
+		if virtualMachine.stack[i] != nil {
+			nonNilStacks++
+		}
+	}
+	assert.Equal(t, 0, nonNilStacks)
+}
