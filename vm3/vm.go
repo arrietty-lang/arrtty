@@ -37,7 +37,7 @@ func NewVm(program []Data, stackSize int) *Vm {
 
 func (v *Vm) labelScan() error {
 	for i, p := range v.program {
-		if p.kind == KLabel {
+		if p.kind == KLabel && p.label.GetIsDefine() {
 			v.labelLocation[p.label.GetName()] = i
 			slog.Debug("labelScan", p.label.GetName(), i)
 		}
@@ -141,6 +141,16 @@ func (v *Vm) Execute() error {
 			}
 		case CMP:
 			err := v.Cmp()
+			if err != nil {
+				return err
+			}
+		case CALL:
+			err := v.Call()
+			if err != nil {
+				return err
+			}
+		case RET:
+			err := v.Ret()
 			if err != nil {
 				return err
 			}

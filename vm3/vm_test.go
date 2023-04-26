@@ -491,3 +491,36 @@ func TestVm_Cmp2(t *testing.T) {
 	}
 	assert.Equal(t, 0, nonNilStacks)
 }
+
+func TestVm_CallRet(t *testing.T) {
+	stackSize := 10
+	jmp := []Data{
+		*NewLabelData(*NewLabel(true, "f")),
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(10),
+		*NewOpcodeData(POP), *NewRegisterTagData(R1),
+		*NewOpcodeData(RET),
+
+		*NewLabelData(*NewLabel(true, "main")),
+		*NewOpcodeData(CALL), *NewLabelData(*NewLabel(false, "f")),
+
+		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(11),
+		*NewOpcodeData(POP), *NewRegisterTagData(R2),
+	}
+
+	virtualMachine := NewVm(jmp, stackSize)
+	err := virtualMachine.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, NewLiteralDataWithRaw(10), virtualMachine.registers[R1])
+	assert.Equal(t, NewLiteralDataWithRaw(11), virtualMachine.registers[R2])
+
+	nonNilStacks := 0
+	for i := 0; i < stackSize; i++ {
+		if virtualMachine.stack[i] != nil {
+			nonNilStacks++
+		}
+	}
+	assert.Equal(t, 0, nonNilStacks)
+}

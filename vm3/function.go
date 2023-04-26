@@ -451,3 +451,28 @@ func (v *Vm) Cmp() error {
 		return fmt.Errorf("サポートされていません: %s == %s", lhs.kind.String(), rhs.kind.String())
 	}
 }
+
+func (v *Vm) Call() error {
+	newLoc := v.program[v.pc+1]
+	switch newLoc.kind {
+	case KLabel:
+		loc, ok := v.labelLocation[newLoc.label.GetName()]
+		if !ok {
+			return fmt.Errorf("未定義ラベル: %s", newLoc.label.GetName())
+		}
+		v._push(*NewLiteralDataWithRaw(v.pc + 2))
+		v.pc = loc
+		return nil
+	default:
+		return fmt.Errorf("不正な宛先: %s", newLoc.label.GetName())
+	}
+}
+
+func (v *Vm) Ret() error {
+	newLoc := v._pop()
+	if newLoc.kind != KLiteral || newLoc.literal.GetKind() != KInt {
+		return fmt.Errorf("戻り先が不正です: pc=%d", newLoc.literal.GetInt())
+	}
+	v.pc = newLoc.literal.GetInt()
+	return nil
+}
