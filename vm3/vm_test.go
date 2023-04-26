@@ -8,6 +8,7 @@ import (
 func TestVm_Push(t *testing.T) {
 	stackSize := 10
 	push := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1.2),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw("1.23"),
@@ -26,6 +27,7 @@ func TestVm_Push(t *testing.T) {
 func TestVm_Pop(t *testing.T) {
 	stackSize := 10
 	push := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1.2),
 		*NewOpcodeData(POP), *NewRegisterTagData(R1),
@@ -52,6 +54,7 @@ func TestVm_Pop(t *testing.T) {
 func TestVm_Add(t *testing.T) {
 	stackSize := 10
 	add := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(10), // R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(33), // R2
 		*NewOpcodeData(POP), *NewRegisterTagData(R2), // stack[8] -> R2
@@ -79,6 +82,7 @@ func TestVm_Add(t *testing.T) {
 func TestVm_Add2(t *testing.T) {
 	stackSize := 10
 	add := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(33), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(ADD), *NewRegisterTagData(R1), *NewRegisterTagData(R1), // R1 += R1
@@ -103,6 +107,7 @@ func TestVm_Add2(t *testing.T) {
 func TestVm_Sub(t *testing.T) {
 	stackSize := 10
 	add := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(33), // R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(10), // R2
 		*NewOpcodeData(POP), *NewRegisterTagData(R2), // stack[8] -> R2
@@ -130,6 +135,7 @@ func TestVm_Sub(t *testing.T) {
 func TestVm_Sub2(t *testing.T) {
 	stackSize := 10
 	add := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(33), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(SUB), *NewRegisterTagData(R1), *NewRegisterTagData(R1), // R1 -= R1
@@ -154,6 +160,7 @@ func TestVm_Sub2(t *testing.T) {
 func TestVm_Mov(t *testing.T) {
 	stackSize := 10
 	mov := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(9), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(MOV), *NewRegisterTagData(R1), *NewRegisterTagData(R2), // R2 = R1
@@ -184,6 +191,7 @@ func TestVm_Mov(t *testing.T) {
 func TestVm_Mov2(t *testing.T) {
 	stackSize := 10
 	mov := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(2), // R3
 		*NewOpcodeData(POP), *NewRegisterTagData(R3), // stack[8] -> R3
 
@@ -217,6 +225,7 @@ func TestVm_Mov2(t *testing.T) {
 func TestVm_Lt(t *testing.T) {
 	stackSize := 10
 	lt := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(2), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R2
@@ -244,6 +253,7 @@ func TestVm_Lt(t *testing.T) {
 func TestVm_Lt2(t *testing.T) {
 	stackSize := 10
 	lt := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R2
@@ -271,6 +281,7 @@ func TestVm_Lt2(t *testing.T) {
 func TestVm_Le(t *testing.T) {
 	stackSize := 10
 	lt := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(2), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R2
@@ -298,6 +309,7 @@ func TestVm_Le(t *testing.T) {
 func TestVm_Le2(t *testing.T) {
 	stackSize := 10
 	lt := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R2
@@ -325,6 +337,7 @@ func TestVm_Le2(t *testing.T) {
 func TestVm_Jmp(t *testing.T) {
 	stackSize := 10
 	jmp := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(JMP), *NewLabelData(*NewLabel(false, "afterExit")),
@@ -354,6 +367,7 @@ func TestVm_Jmp(t *testing.T) {
 func TestVm_Jmp2(t *testing.T) {
 	stackSize := 10
 	jmp := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R2
@@ -388,6 +402,7 @@ func TestVm_Jmp2(t *testing.T) {
 func TestVm_Jmp3(t *testing.T) {
 	stackSize := 10
 	jmp := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1), // R2
@@ -422,6 +437,7 @@ func TestVm_Jmp3(t *testing.T) {
 func TestVm_Cmp(t *testing.T) {
 	stackSize := 10
 	jmp := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(3), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1), // R2
@@ -450,6 +466,7 @@ func TestVm_Cmp(t *testing.T) {
 func TestVm_Cmp2(t *testing.T) {
 	stackSize := 10
 	jmp := []Data{
+		*NewLabelData(*NewLabel(true, "main")),
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1), // R1
 		*NewOpcodeData(POP), *NewRegisterTagData(R1), // stack[8] -> R1
 		*NewOpcodeData(PUSH), *NewLiteralDataWithRaw(1), // R2

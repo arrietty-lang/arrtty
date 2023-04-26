@@ -73,6 +73,13 @@ func (v *Vm) Execute() error {
 	if err != nil {
 		return err
 	}
+
+	entryPoint, ok := v.labelLocation["main"]
+	if !ok {
+		return fmt.Errorf("main label not found")
+	}
+	v.pc = entryPoint
+
 	for v.pc < len(v.program) && !v.exited {
 		slog.Debug("Execute", "pc", v.pc, "data", v.program[v.pc].String())
 		if v.program[v.pc].kind == KLabel {
