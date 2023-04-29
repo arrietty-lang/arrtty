@@ -189,9 +189,9 @@ func stmt(node *parse.Node) ([]vm3.Data, error) {
 		}
 		program = append(program, cond...)
 		// 結果を取り出す
-		program = append(program, []vm3.Data{
-			*vm3.NewOpcodeData(vm3.POP), *vm3.NewRegisterTagData(vm3.R1),
-		}...)
+		//program = append(program, []vm3.Data{
+		//	*vm3.NewOpcodeData(vm3.POP), *vm3.NewRegisterTagData(vm3.R1),
+		//}...)
 
 		// 各ジャンプ先のラベルを用意
 		ifBlockLabel := "if_if_block_" + RandStringRunes(20)
