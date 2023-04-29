@@ -14,8 +14,8 @@ golangに互換 のある形を取りたい
 ### 機能
 - vm
   - メイン関数から整数を終了コードとして返却できる
-  - 関数を呼び出すことができる
-  - 関数に引数を渡すことができる
+  - 関数を呼び出せる
+  - 関数に引数を渡すせる
   - 関数からの戻り値を取得できる
 
 ### 文法
@@ -107,15 +107,15 @@ funcReturns = types
 - [x] POP
 ---
 - [x] MOV
-- [x] MSG
-- [x] LEN
+- [ ] MSG
+- [ ] LEN
 ---
-- [x] SYSCALL
+- [ ] SYSCALL
   - WRITE
-    - [x] STDOUT
-    - [x] STDERR
-    - [x] FILE
+    - [ ] STDOUT
+    - [ ] STDERR
+    - [ ] FILE
   - READ
-    - [x] STDIN
-    - [x] FILE
+    - [ ] STDIN
+    - [ ] FILE
 - [x] EXIT

@@ -1,11 +1,11 @@
-package vm
+package vm3
+
+import "fmt"
 
 type Opcode int
 
 const (
-	// NOP なにもせず
 	NOP Opcode = iota
-	SET
 	// ADD `add x1 x2`でx2 += x1
 	ADD
 	// SUB `sub x1 x2`でx2 -= x1
@@ -47,8 +47,6 @@ func (o Opcode) CountOfOperand() int {
 	switch o {
 	case NOP:
 		return 0
-	case SET:
-		return 2
 	case ADD:
 		return 2
 	case SUB:
@@ -109,7 +107,6 @@ func (o Opcode) CountOfOperand() int {
 
 var opcodes = [...]string{
 	NOP:     "NOP",
-	SET:     "SET",
 	ADD:     "ADD",
 	SUB:     "SUB",
 	MUL:     "MUL",
@@ -140,5 +137,5 @@ var opcodes = [...]string{
 }
 
 func (o Opcode) String() string {
-	return opcodes[o]
+	return fmt.Sprintf("Opcode{ %s }", opcodes[o])
 }
