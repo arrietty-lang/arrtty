@@ -1,7 +1,6 @@
 package assemble2
 
 import (
-	"github.com/arrietty-lang/arrtty/assemble"
 	"github.com/arrietty-lang/arrtty/preprocess/analyze"
 	"github.com/arrietty-lang/arrtty/preprocess/parse"
 	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
@@ -93,7 +92,7 @@ func main() int {
 				t.Fatal(err)
 			}
 
-			obj, err := assemble.Link([]*assemble.Object{
+			obj, err := Link([]*Object{
 				{
 					Identifier:    "",
 					SemanticsNode: sem,
