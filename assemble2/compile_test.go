@@ -31,6 +31,50 @@ func main() int {
 		`,
 			3,
 		},
+		{
+			"f",
+			`
+func f(n int) int {
+	var x int = n + 1
+	return x + n
+}
+func main() int {
+	return f(f(1))
+}
+				`,
+			7,
+		},
+		{
+			"1",
+			`
+func f(n int) int {
+	if n < 10 {
+		return f(n+1)
+	}
+	return n
+}
+
+func main() int {
+	return f(0)
+}
+				`,
+			10,
+		},
+		{
+			"fib",
+			`
+func fib(n int) int {
+	if n < 2 {
+		return n
+	}
+	return fib(n-1) + fib(n-2)
+}
+func main() int {
+	return fib(10)
+}
+				`,
+			55,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
