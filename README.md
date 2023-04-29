@@ -1,5 +1,5 @@
 # arrtty
-golangに互換 のある形を取りたい
+golangに似た文法の言語(一部互換あり)
 
 ### 処理
 - preprocess
