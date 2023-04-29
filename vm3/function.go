@@ -11,7 +11,32 @@ func (v *Vm) Push() error {
 	}()
 	value := &v.program[v.pc+1]
 	slog.Info("Push", "val", value.String())
-	v._push(*value)
+	//v._push(*value)
+
+	var data *Data
+	switch value.kind {
+	case KLiteral:
+		data = value
+	case KRegisterTag:
+		pData, ok := v.GetRegisterByTag(value.registerTag)
+		if !ok {
+			return fmt.Errorf("レジスタ%sからデータを取得できませんでした", value.registerTag)
+		}
+		data = pData
+	case KOffset:
+		loc, err := v.calculateOffset(value.offset)
+		if err != nil {
+			return err
+		}
+		data = v.stack[loc]
+	case KLabel:
+		d, ok := v.data[value.label.GetName()]
+		if !ok {
+			return fmt.Errorf("未定義: %s", value.label.GetName())
+		}
+		data = d
+	}
+	v._push(*data)
 	return nil
 }
 
@@ -31,7 +56,11 @@ func (v *Vm) Pop() error {
 		slog.Info("Pop", "kind", "offset", "into(sp)", loc, "into(addr)", value.offset.AddressString(), "val", value.String())
 		return nil
 	case KRegisterTag:
-		v.registers[into.registerTag] = &value
+		err := v.SetRegisterByTag(into.registerTag, &value)
+		if err != nil {
+			return err
+		}
+		//v.registers[into.registerTag] = &value
 		slog.Info("Pop", "kind", "register", "into(register)", into.registerTag, "val", value.String())
 		return nil
 	}
@@ -117,14 +146,45 @@ func (v *Vm) Add() error {
 		switch from.kind {
 		case KRegisterTag:
 			// RTo += RFrom
-			fromVal := *v.registers[from.registerTag]
-			toVal := *v.registers[to.registerTag]
+			//fromVal := *v.registers[from.registerTag]
+			pFromVal, ok := v.GetRegisterByTag(from.registerTag)
+			if !ok {
+				return fmt.Errorf("レジスタ%sからデータを取得できませんでした", from.registerTag.String())
+			}
+			fromVal := *pFromVal
+			//toVal := *v.registers[to.registerTag]
+			pToVal, ok := v.GetRegisterByTag(to.registerTag)
+			if !ok {
+				return fmt.Errorf("レジスタ%sからデータを取得できませんでした", to.registerTag.String())
+			}
+			toVal := *pToVal
 			slog.Info("ADD", "from", from.registerTag.String(), "to", to.registerTag.String())
 			result, err := v.add(fromVal.literal, toVal.literal)
 			if err != nil {
 				return err
 			}
-			v.registers[to.registerTag] = NewLiteralData(result)
+			//v.registers[to.registerTag] = NewLiteralData(result)
+			err = v.SetRegisterByTag(to.registerTag, NewLiteralData(result))
+			return err
+		default:
+			return fmt.Errorf("addはfrom: %sに対応していません", from.kind.String())
+		}
+	case KOffset:
+		switch from.kind {
+		case KLiteral:
+			// todo: add test
+			// OffsetTo += LiteralFrom
+			offset, err := v.calculateOffset(to.offset)
+			if err != nil {
+				return err
+			}
+			toVal := *v.stack[offset]
+			slog.Info("ADD", "from", from.registerTag.String(), "to", to.registerTag.String())
+			result, err := v.add(from.literal, toVal.literal)
+			if err != nil {
+				return err
+			}
+			v.stack[offset] = NewLiteralData(result)
 			return nil
 		default:
 			return fmt.Errorf("addはfrom: %sに対応していません", from.kind.String())
@@ -146,17 +206,48 @@ func (v *Vm) Sub() error {
 		switch from.kind {
 		case KRegisterTag:
 			// RTo -= RFrom
-			fromVal := *v.registers[from.registerTag]
-			toVal := *v.registers[to.registerTag]
+			//fromVal := *v.registers[from.registerTag]
+			pFromVal, ok := v.GetRegisterByTag(from.registerTag)
+			if !ok {
+				return fmt.Errorf("レジスタ%sからデータを取得できませんでした", from.registerTag.String())
+			}
+			fromVal := *pFromVal
+			//toVal := *v.registers[to.registerTag]
+			pToVal, ok := v.GetRegisterByTag(to.registerTag)
+			if !ok {
+				return fmt.Errorf("レジスタ%sからデータを取得できませんでした", to.registerTag.String())
+			}
+			toVal := *pToVal
 			slog.Info("SUB", "from", from.registerTag.String(), "to", to.registerTag.String())
 			result, err := v.sub(fromVal.literal, toVal.literal)
 			if err != nil {
 				return err
 			}
-			v.registers[to.registerTag] = NewLiteralData(result)
-			return nil
+			//v.registers[to.registerTag] = NewLiteralData(result)
+			err = v.SetRegisterByTag(to.registerTag, NewLiteralData(result))
+			return err
 		default:
 			return fmt.Errorf("fromはfrom: %sに対応していません", from.kind.String())
+		}
+	case KOffset:
+		switch from.kind {
+		case KLiteral:
+			// todo: add test
+			// OffsetTo -= LiteralFrom
+			offset, err := v.calculateOffset(to.offset)
+			if err != nil {
+				return err
+			}
+			toVal := *v.stack[offset]
+			slog.Info("SUB", "from", from.registerTag.String(), "to", to.registerTag.String())
+			result, err := v.sub(from.literal, toVal.literal)
+			if err != nil {
+				return err
+			}
+			v.stack[offset] = NewLiteralData(result)
+			return nil
+		default:
+			return fmt.Errorf("subはfrom: %sに対応していません", from.kind.String())
 		}
 	default:
 		return fmt.Errorf("fromはto: %sに対応していません", to.kind.String())
@@ -164,9 +255,10 @@ func (v *Vm) Sub() error {
 }
 
 func (v *Vm) Mov() error {
-	defer func() {
+	defer func(d1, d2 Data) {
 		v.pc += 1 + MOV.CountOfOperand()
-	}()
+		slog.Info("mov", "from", d1.String(), "to", d2.String())
+	}(v.program[v.pc+1], v.program[v.pc+2])
 	from := v.program[v.pc+1]
 	to := v.program[v.pc+2]
 	switch to.kind {
@@ -174,9 +266,15 @@ func (v *Vm) Mov() error {
 		switch from.kind {
 		case KRegisterTag:
 			// RTo = RFrom
-			fromVal := *v.registers[from.registerTag]
-			v.registers[to.registerTag] = &fromVal
-			return nil
+			//fromVal := *v.registers[from.registerTag]
+			pFromVal, ok := v.GetRegisterByTag(from.registerTag)
+			if !ok {
+				return fmt.Errorf("レジスタ%sからデータを取得できませんでした", from.registerTag.String())
+			}
+			fromVal := *pFromVal
+			//v.registers[to.registerTag] = &fromVal
+			err := v.SetRegisterByTag(to.registerTag, &fromVal)
+			return err
 		case KOffset:
 			// RTo = FromOffset
 			fromLoc, err := v.calculateOffset(from.offset)
@@ -184,8 +282,18 @@ func (v *Vm) Mov() error {
 				return err
 			}
 			fromVal := *v.stack[fromLoc]
-			v.registers[to.registerTag] = &fromVal
-			return nil
+			//v.registers[to.registerTag] = &fromVal
+			err = v.SetRegisterByTag(to.registerTag, &fromVal)
+			return err
+		case KLabel:
+			// RTo = FromLabel
+			fromVal, ok := v.GetDataByLabel(from.label.GetName())
+			if !ok {
+				return fmt.Errorf("代入元の変数が見つかりません: %s", from.label.GetName())
+			}
+			//v.registers[to.registerTag] = &fromVal
+			err := v.SetRegisterByTag(to.registerTag, &fromVal)
+			return err
 		default:
 			return fmt.Errorf("代入元が不明です: %s", from.kind.String())
 		}
@@ -193,7 +301,12 @@ func (v *Vm) Mov() error {
 		switch from.kind {
 		case KRegisterTag:
 			// ToOffset = RFrom
-			fromVal := *v.registers[from.registerTag]
+			//fromVal := *v.registers[from.registerTag]
+			pFromVal, ok := v.GetRegisterByTag(from.registerTag)
+			if !ok {
+				return fmt.Errorf("レジスタ%sからデータを取得できませんでした", from.registerTag.String())
+			}
+			fromVal := *pFromVal
 			toLoc, err := v.calculateOffset(to.offset)
 			if err != nil {
 				return err
@@ -212,6 +325,50 @@ func (v *Vm) Mov() error {
 				return err
 			}
 			v.stack[toLoc] = &fromVal
+			return nil
+		case KLabel:
+			// ToOffset = FromLabel
+			fromVal, ok := v.GetDataByLabel(from.label.GetName())
+			if !ok {
+				return fmt.Errorf("代入元の変数が見つかりません: %s", from.label.GetName())
+			}
+			toLoc, err := v.calculateOffset(to.offset)
+			if err != nil {
+				return err
+			}
+			v.stack[toLoc] = &fromVal
+			return nil
+		default:
+			return fmt.Errorf("代入元が不明です: %s", from.kind.String())
+		}
+	case KLabel:
+		switch from.kind {
+		case KRegisterTag:
+			// ToLabel = FromRegister
+			//fromVal := *v.registers[from.registerTag]
+			pFromVal, ok := v.GetRegisterByTag(from.registerTag)
+			if !ok {
+				return fmt.Errorf("レジスタ%sからデータを取得できませんでした", from.registerTag.String())
+			}
+			fromVal := *pFromVal
+			v.data[to.label.GetName()] = &fromVal
+			return nil
+		case KOffset:
+			// ToLabel = FromOffset
+			fromLoc, err := v.calculateOffset(from.offset)
+			if err != nil {
+				return err
+			}
+			fromVal := *v.stack[fromLoc]
+			v.data[to.label.GetName()] = &fromVal
+			return nil
+		case KLabel:
+			// ToLabel = FromLabel
+			fromVal, ok := v.GetDataByLabel(from.label.GetName())
+			if !ok {
+				return fmt.Errorf("代入元の変数が見つかりません: %s", from.label.GetName())
+			}
+			v.data[to.label.GetName()] = &fromVal
 			return nil
 		default:
 			return fmt.Errorf("代入元が不明です: %s", from.kind.String())

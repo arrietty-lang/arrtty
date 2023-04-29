@@ -14,6 +14,7 @@ type Vm struct {
 	stack         []*Data
 	registers     map[RegisterTag]*Data
 	labelLocation map[string]int
+	data          map[string]*Data
 	exited        bool
 }
 
@@ -21,6 +22,11 @@ func NewVm(program []Data, stackSize int) *Vm {
 	var stack = make([]*Data, stackSize)
 	var registers = map[RegisterTag]*Data{}
 	var labelLocation = map[string]int{}
+	var data = map[string]*Data{}
+
+	for i, d := range program {
+		slog.Debug(i, d.String())
+	}
 
 	return &Vm{
 		program:       program,
@@ -31,6 +37,7 @@ func NewVm(program []Data, stackSize int) *Vm {
 		stack:         stack,
 		registers:     registers,
 		labelLocation: labelLocation,
+		data:          data,
 		exited:        false,
 	}
 }
@@ -66,6 +73,74 @@ func (v *Vm) _pop() Data {
 	v.stack[v.sp] = nil
 	v.sp++
 	return d
+}
+
+func (v *Vm) getRSP() int {
+	return v.sp
+}
+func (v *Vm) setRSP(i int) {
+	v.sp = i
+}
+
+func (v *Vm) getRBP() int {
+	return v.bp
+}
+func (v *Vm) setRBP(i int) {
+	v.bp = i
+}
+
+func (v *Vm) GetRegisterByTag(tag RegisterTag) (*Data, bool) {
+	switch tag {
+	case RSP:
+		return NewLiteralDataWithRaw(v.sp), true
+	case RBP:
+		return NewLiteralDataWithRaw(v.bp), true
+	default:
+		d, ok := v.registers[tag]
+		if d.literal.GetKind() == KString {
+			slog.Debug("string returned")
+		}
+		return d, ok
+	}
+}
+
+func (v *Vm) SetRegisterByTag(tag RegisterTag, data *Data) error {
+	if data.literal.GetKind() == KString {
+		slog.Debug("string set.")
+	}
+	switch tag {
+	case RSP:
+		if data.kind != KLiteral || data.literal.GetKind() != KInt {
+			return fmt.Errorf("SPに%s.%sを代入することはできません", data.kind.String(), data.literal.GetKind())
+		}
+		v.sp = data.literal.GetInt()
+		return nil
+	case RBP:
+		if data.kind != KLiteral || data.literal.GetKind() != KInt {
+			return fmt.Errorf("BPに%s.%sを代入することはできません", data.kind.String(), data.literal.GetKind())
+		}
+		v.bp = data.literal.GetInt()
+		return nil
+	default:
+		v.registers[tag] = data
+		return nil
+	}
+}
+
+func (v *Vm) GetDataByLabel(label string) (Data, bool) {
+	d, ok := v.data[label]
+	return *d, ok
+}
+
+func (v *Vm) ExitCode() (int, error) {
+	d := v.registers[R10]
+	if d == nil {
+		return 0, nil
+	}
+	if d.kind != KLiteral || d.literal.GetKind() != KInt {
+		return 0, fmt.Errorf("終了コードが不正な値です: %s", d.String())
+	}
+	return d.literal.GetInt(), nil
 }
 
 func (v *Vm) Execute() error {

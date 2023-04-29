@@ -8,6 +8,11 @@ const (
 	R1 RegisterTag = iota
 	R2
 	R3
+	R10
+	R11
+
+	RSP
+	RBP
 )
 
 func (r RegisterTag) String() string {
@@ -19,6 +24,14 @@ func (r RegisterTag) String() string {
 		s = "R2"
 	case R3:
 		s = "R3"
+	case R10:
+		s = "R10"
+	case R11:
+		s = "R11"
+	case RSP:
+		s = "RSP"
+	case RBP:
+		s = "RBP"
 	default:
 		s = "illegal"
 	}
