@@ -1,4 +1,4 @@
-package assemble2
+package assemble
 
 import "github.com/arrietty-lang/arrtty/preprocess/analyze"
 

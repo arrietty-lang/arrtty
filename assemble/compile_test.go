@@ -1,10 +1,10 @@
-package assemble2
+package assemble
 
 import (
 	"github.com/arrietty-lang/arrtty/preprocess/analyze"
 	"github.com/arrietty-lang/arrtty/preprocess/parse"
 	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
-	"github.com/arrietty-lang/arrtty/vm3"
+	"github.com/arrietty-lang/arrtty/vm"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -107,7 +107,7 @@ func main() int {
 				t.Fatal(err)
 			}
 
-			virtualMachine := vm3.NewVm(program, 100)
+			virtualMachine := vm.NewVm(program, 100)
 			err = virtualMachine.Execute()
 			if err != nil {
 				t.Fatal(err)

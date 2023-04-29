@@ -1,4 +1,4 @@
-package assemble2
+package assemble
 
 func Link(objs []*Object) (*Object, error) {
 	// todo : 別々になっているオブジェクトをつなげて一つにする
