@@ -35,6 +35,8 @@ func (v *Vm) Push() error {
 			return fmt.Errorf("未定義: %s", value.label.GetName())
 		}
 		data = d
+	default:
+		return fmt.Errorf("pushはこれをサポートしていません: %s", value.kind.String())
 	}
 	v._push(*data)
 	return nil
