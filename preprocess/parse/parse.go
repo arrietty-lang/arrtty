@@ -179,7 +179,7 @@ func toplevel() (*Node, error) {
 		return NewAssignNode(c.Pos, NewVarDeclNode(c.Pos, NewIdentNode(id.Pos, id.Literal.S), typ), value), nil
 	}
 
-	return nil, fmt.Errorf("PARSE: unexpected toplevel")
+	return nil, fmt.Errorf("PARSE: unexpected toplevel: %v", token)
 }
 
 //func block() (*Node, error) {
@@ -268,8 +268,8 @@ func stmt() (*Node, error) {
 
 	// for
 	if for_ := consumeIdent("for"); for_ != nil {
-		// for {}
 		if peekKind(tokenize.Lcb) != nil {
+			// for {}
 			body, err := stmt()
 			if err != nil {
 				return nil, err
@@ -281,23 +281,27 @@ func stmt() (*Node, error) {
 		var cond *Node
 		var loop *Node
 		// init
-		if peekKind(tokenize.Lcb) == nil {
+		if consumeKind(tokenize.Lcb) == nil {
 			i, err := expr()
 			if err != nil {
 				return nil, err
 			}
 			init = i
 		}
+		_, err := expectKind(tokenize.Semi)
+
 		// cond
-		if peekKind(tokenize.Lcb) == nil {
+		if consumeKind(tokenize.Lcb) == nil {
 			c, err := expr()
 			if err != nil {
 				return nil, err
 			}
 			cond = c
 		}
+		_, err = expectKind(tokenize.Semi)
+
 		// loop
-		if peekKind(tokenize.Lcb) == nil {
+		if consumeKind(tokenize.Lcb) == nil {
 			l, err := expr()
 			if err != nil {
 				return nil, err

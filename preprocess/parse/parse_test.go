@@ -32,6 +32,11 @@ func TestParseWork(t *testing.T) {
 		}
 		return z, isMinus
 	}
+	func f() {
+		for  {
+			sayHello("")
+		}
+	}
 	`
 	head, err := tokenize.Tokenize(code)
 	if err != nil {
