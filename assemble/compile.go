@@ -235,6 +235,60 @@ func stmt(node *parse.Node) ([]vm.Data, error) {
 			program = append(program, f...)
 		}
 		return program, nil
+	case parse.NdFor:
+		key := RandStringRunes(10)
+		forStartLabel := fmt.Sprintf("for_start_%s", key)
+		forTrueLabel := fmt.Sprintf("for_true_%s", key)
+		forFalseLabel := fmt.Sprintf("for_false_%s", key)
+
+		// ループ前の初期化
+		init, err := expr(node.ForField.Init)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, init...)
+		// ループ継続時に最終処理から帰ってくる地点
+		program = append(program, []vm.Data{
+			*vm.NewLabelData(*vm.NewLabel(true, forStartLabel)),
+		}...)
+		// 条件式チェック
+		cond, err := expr(node.ForField.Cond)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, cond...)
+
+		// 条件式が真ならブロックTrueへ、そうでないならブロックFalseへ(外)
+		program = append(program, []vm.Data{
+			*vm.NewOpcodeData(vm.JZ), *vm.NewLabelData(*vm.NewLabel(false, forTrueLabel)),
+			*vm.NewOpcodeData(vm.JMP), *vm.NewLabelData(*vm.NewLabel(false, forFalseLabel)),
+		}...)
+
+		// ループ内部
+		program = append(program, []vm.Data{
+			*vm.NewLabelData(*vm.NewLabel(true, forTrueLabel)),
+		}...)
+		body, err := stmt(node.ForField.Body)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, body...)
+
+		// ループ内の最終処理
+		loop, err := expr(node.ForField.Loop)
+		if err != nil {
+			return nil, err
+		}
+		program = append(program, loop...)
+		program = append(program, []vm.Data{
+			*vm.NewOpcodeData(vm.JMP), *vm.NewLabelData(*vm.NewLabel(false, forStartLabel)),
+		}...)
+
+		// ループ外
+		program = append(program, []vm.Data{
+			*vm.NewLabelData(*vm.NewLabel(true, forFalseLabel)),
+		}...)
+		return program, nil
 	}
 	return expr(node)
 }
@@ -515,7 +569,7 @@ func literal(node *parse.Node) ([]vm.Data, error) {
 			*vm.NewOpcodeData(vm.PUSH), *vm.NewOffsetData(*vm.NewOffset(vm.BP, -loc)),
 		}, nil
 	}
-	return nil, fmt.Errorf("サポートされていないリテラルです")
+	return nil, fmt.Errorf("サポートされていないリテラルです: %v", node)
 }
 
 func Compile(sem *analyze.Semantics) ([]vm.Data, error) {

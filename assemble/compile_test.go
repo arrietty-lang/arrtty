@@ -74,6 +74,20 @@ func main() int {
 				`,
 			55,
 		},
+		{
+			"for1",
+			`
+func main() int {
+	var x int = 0
+	var i int = 0
+	for i=0; i<10; i=i+1{
+		x = x + 2
+	}
+	return x
+}
+				`,
+			20,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
