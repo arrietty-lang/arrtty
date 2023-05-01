@@ -1,6 +1,8 @@
-package assemble
+package assemble2_test
 
 import (
+	"github.com/arrietty-lang/arrtty/assemble"
+	"github.com/arrietty-lang/arrtty/assemble2"
 	"github.com/arrietty-lang/arrtty/preprocess/analyze"
 	"github.com/arrietty-lang/arrtty/preprocess/parse"
 	"github.com/arrietty-lang/arrtty/preprocess/tokenize"
@@ -62,7 +64,6 @@ func main() int {
 		{
 			"fib",
 			`
-var gx int = 1
 func fib(n int) int {
 	if n < 2 {
 		return n
@@ -93,7 +94,7 @@ func main() int {
 				t.Fatal(err)
 			}
 
-			obj, err := Link([]*Object{
+			obj, err := assemble.Link([]*assemble.Object{
 				{
 					Identifier:    "",
 					SemanticsNode: sem,
@@ -103,7 +104,7 @@ func main() int {
 				t.Fatal(err)
 			}
 
-			program, err := Compile(obj.SemanticsNode)
+			program, err := assemble2.Compile(obj.SemanticsNode)
 			if err != nil {
 				t.Fatal(err)
 			}

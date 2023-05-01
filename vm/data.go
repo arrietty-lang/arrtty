@@ -40,6 +40,10 @@ type Data struct {
 	opcode      Opcode
 }
 
+func (d *Data) GetKind() DataKind {
+	return d.kind
+}
+
 func (d *Data) String() string {
 	var s string
 	switch d.kind {
