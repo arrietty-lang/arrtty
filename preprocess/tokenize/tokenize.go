@@ -193,7 +193,7 @@ inputLoop:
 			continue
 		}
 		// newline
-		if userInput[currentPos.Wat] == '\n' {
+		if userInput[currentPos.Wat] == '\n' || userInput[currentPos.Wat] == '\r' {
 			//cur = NewNewlineChain(cur, currentPos.Clone(), "\n")
 			currentPos.LineNo++
 			currentPos.Lat = 0
